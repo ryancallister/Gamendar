@@ -1,0 +1,28 @@
+from flask import Flask
+from flask_cors import CORS
+from database import init_db
+from routes.auth import auth_bp
+from routes.events import events_bp
+from routes.availability import availability_bp
+from routes.admin import admin_bp
+import os
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-me-in-production')
+app.config['DATABASE'] = os.environ.get('DATABASE_PATH', '/data/calendar.db')
+
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+init_db(app)
+
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(events_bp, url_prefix='/api/events')
+app.register_blueprint(availability_bp, url_prefix='/api/availability')
+app.register_blueprint(admin_bp, url_prefix='/api/admin')
+
+@app.route('/api/health')
+def health():
+    return {'status': 'ok'}
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')
