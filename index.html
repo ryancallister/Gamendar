@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weekly Availability</title>
+<title>Gamendar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -336,7 +336,7 @@
     <div class="auth-logo">
       <div class="icon">📅</div>
       <div>
-        <h1>Availability</h1>
+        <h1>Gamendar</h1>
         <span>Team weekly scheduler</span>
       </div>
     </div>
@@ -362,7 +362,7 @@
 <!-- APP -->
 <div id="app-screen">
   <div class="topbar">
-    <div class="topbar-logo"><div class="dot"></div>Availability</div>
+    <div class="topbar-logo"><div class="dot"></div>Gamendar</div>
     <nav class="topbar-nav">
       <button class="nav-btn active" onclick="showPage('events')" id="nav-events">Events</button>
       <button class="nav-btn" onclick="showPage('admin')" id="nav-admin" style="display:none">Admin</button>
@@ -647,7 +647,7 @@ function renderWeekGrid(data) {
       if (isMine) {
         html += `<div class="week-grid-cell avail-cell mine${isWknd?' weekend':''}" 
           data-user="${user.id}" data-date="${iso}" data-status="${status}"
-          onclick="cycleAvailability(this, ${currentEventId}, '${iso}', '${status}')">
+          onclick="cycleAvailability(this, ${currentEventId}, '${iso}')">
           <div class="avail-pill ${pillClass}">${symbol}</div>
         </div>`;
       } else {
@@ -676,37 +676,31 @@ function renderWeekGrid(data) {
   document.getElementById('week-grid-wrap').innerHTML = html;
 }
 
-async function cycleAvailability(cell, eventId, date, currentStatus) {
-  const ns = { 'available': 'unavailable', 'unavailable': 'maybe', 'maybe': '', '': 'available' };
-  const newStatus = ns[currentStatus] ?? 'available';
+async function cycleAvailability(cell, eventId, date) {
+  const currentStatus = cell.dataset.status || '';
+  const cycle = { '': 'available', 'available': 'unavailable', 'unavailable': 'maybe', 'maybe': '' };
+  const newStatus = cycle[currentStatus] ?? 'available';
   const statusEmoji = { available: '✓', unavailable: '✗', maybe: '~', '': '·' };
 
-  // Optimistic UI
+  // Optimistic UI update — set data-status immediately so next click reads correct value
   const pill = cell.querySelector('.avail-pill');
   cell.dataset.status = newStatus;
+  cell.setAttribute('onclick', `cycleAvailability(this, ${eventId}, '${date}')`);
   pill.className = `avail-pill ${newStatus || 'empty'}`;
   pill.textContent = statusEmoji[newStatus] ?? '·';
 
   try {
-    if (newStatus) {
-      await api(`/availability/event/${eventId}/set`, {
-        method: 'POST',
-        body: JSON.stringify({ date, status: newStatus })
-      });
-    } else {
-      // Set to empty = remove — we'll just set 'unavailable' minimum; treat '' as no preference
-      await api(`/availability/event/${eventId}/set`, {
-        method: 'POST',
-        body: JSON.stringify({ date, status: 'unavailable' })
-      });
-      // Actually cycle to available on next click
-    }
+    await api(`/availability/event/${eventId}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ date, status: newStatus || 'available' })
+    });
     updateSummaryRow();
   } catch(e) {
-    toast('Failed to save: ' + e.message);
-    // Revert
+    // Revert on failure
+    cell.dataset.status = currentStatus;
     pill.className = `avail-pill ${currentStatus || 'empty'}`;
     pill.textContent = statusEmoji[currentStatus] ?? '·';
+    toast('Failed to save: ' + e.message);
   }
 }
 
