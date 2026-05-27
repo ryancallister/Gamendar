@@ -1,7 +1,7 @@
 services:
   backend:
     build: ./backend
-    container_name: availability-backend
+    container_name: gamendar-backend
     restart: unless-stopped
     environment:
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
@@ -16,7 +16,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: availability-frontend
+    container_name: gamendar-frontend
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:80"

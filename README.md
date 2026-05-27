@@ -1,4 +1,4 @@
-# Availability Calendar
+# Gamendar
 
 A self-hosted team availability scheduler. Users log in and mark which days they're available for each weekly event. Admins manage users and create events.
 
@@ -22,8 +22,8 @@ A self-hosted team availability scheduler. Users log in and mark which days they
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/availability-calendar.git
-cd availability-calendar
+git clone https://github.com/YOUR_USERNAME/gamendar.git
+cd gamendar
 ```
 
 ### 2. Configure environment
@@ -68,19 +68,19 @@ Password: admin123
 
 ```bash
 cd /mnt/user/appdata
-git clone https://github.com/YOUR_USERNAME/availability-calendar.git
-cd availability-calendar
+git clone https://github.com/YOUR_USERNAME/gamendar.git
+cd gamendar
 cp .env.example .env
 nano .env   # set SECRET_KEY and APP_PORT
 ```
 
-4. In the Unraid UI → **Docker Compose Manager** → point it at `/mnt/user/appdata/availability-calendar/docker-compose.yml` and start it.
+4. In the Unraid UI → **Docker Compose Manager** → point it at `/mnt/user/appdata/gamendar/docker-compose.yml` and start it.
 
 ### Option B — Manual Docker run (no Compose plugin needed)
 
 ```bash
 # Create the data directory on your array
-mkdir -p /mnt/user/appdata/availability-calendar/data
+mkdir -p /mnt/user/appdata/gamendar/data
 
 # Run backend
 docker run -d \
@@ -88,8 +88,8 @@ docker run -d \
   --restart unless-stopped \
   -e SECRET_KEY=your-secret-key-here \
   -e DATABASE_PATH=/data/calendar.db \
-  -v /mnt/user/appdata/availability-calendar/data:/data \
-  ghcr.io/YOUR_USERNAME/availability-calendar-backend:latest
+  -v /mnt/user/appdata/gamendar/data:/data \
+  ghcr.io/YOUR_USERNAME/gamendar-backend:latest
 
 # Run frontend (includes nginx reverse proxy)
 docker run -d \
@@ -97,7 +97,7 @@ docker run -d \
   --restart unless-stopped \
   -p 8080:80 \
   --link availability-backend:backend \
-  ghcr.io/YOUR_USERNAME/availability-calendar-frontend:latest
+  ghcr.io/YOUR_USERNAME/gamendar-frontend:latest
 ```
 
 ### Unraid port & data path tips
@@ -105,8 +105,8 @@ docker run -d \
 | Setting | Recommended value |
 |---|---|
 | `APP_PORT` | `8080` (or any unused port) |
-| Data volume | `/mnt/user/appdata/availability-calendar/data` |
-| Config path | `/mnt/user/appdata/availability-calendar` |
+| Data volume | `/mnt/user/appdata/gamendar/data` |
+| Config path | `/mnt/user/appdata/gamendar` |
 
 ---
 
@@ -141,9 +141,9 @@ To use pre-built images instead of building locally, replace the `build:` keys i
 ```yaml
 services:
   backend:
-    image: ghcr.io/YOUR_USERNAME/availability-calendar-backend:latest
+    image: ghcr.io/YOUR_USERNAME/gamendar-backend:latest
   frontend:
-    image: ghcr.io/YOUR_USERNAME/availability-calendar-frontend:latest
+    image: ghcr.io/YOUR_USERNAME/gamendar-frontend:latest
 ```
 
 ---
@@ -151,7 +151,7 @@ services:
 ## Project Structure
 
 ```
-availability-calendar/
+gamendar/
 ├── backend/
 │   ├── routes/         # auth, events, availability, admin
 │   ├── app.py          # Flask entry point
