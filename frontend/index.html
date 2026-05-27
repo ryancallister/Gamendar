@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Availability</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1f2436;
+    --surface3: #262d42;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #eef0f6;
+    --text2: #8b93aa;
+    --text3: #545d77;
+    --accent: #6c8ef5;
+    --accent2: #3d5bd4;
+    --accent-glow: rgba(108,142,245,0.15);
+    --green: #3ecf8e;
+    --green-bg: rgba(62,207,142,0.12);
+    --red: #f06b6b;
+    --red-bg: rgba(240,107,107,0.12);
+    --amber: #f5a623;
+    --amber-bg: rgba(245,166,35,0.12);
+    --radius: 10px;
+    --radius-lg: 16px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* AUTH */
+  #auth-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(108,142,245,0.08) 0%, transparent 70%);
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+  }
+
+  .auth-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .auth-logo .icon {
+    width: 38px; height: 38px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+
+  .auth-logo h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+  .auth-logo span { font-size: 13px; color: var(--text2); display: block; }
+
+  .auth-tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 8px; padding: 4px; margin-bottom: 1.75rem; }
+  .auth-tab {
+    flex: 1; padding: 8px; text-align: center; border-radius: 6px;
+    cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text2);
+    border: none; background: none; font-family: var(--font); transition: all 0.15s;
+  }
+  .auth-tab.active { background: var(--surface2); color: var(--text); }
+
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+  .form-group input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: var(--font); font-size: 15px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .form-group input:focus { border-color: var(--accent); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: var(--font); font-size: 15px; font-weight: 500; transition: all 0.15s;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; width: 100%; padding: 11px; }
+  .btn-primary:hover { background: #7a9cf6; }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(240,107,107,0.2); }
+  .btn-danger:hover { background: rgba(240,107,107,0.2); }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error-msg { background: var(--red-bg); color: var(--red); border: 1px solid rgba(240,107,107,0.2); padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 1rem; }
+  .success-msg { background: var(--green-bg); color: var(--green); border: 1px solid rgba(62,207,142,0.2); padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 1rem; }
+
+  /* APP LAYOUT */
+  #app-screen { display: none; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem;
+    display: flex; align-items: center; gap: 1rem; height: 56px;
+  }
+
+  .topbar-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; letter-spacing: -0.3px; }
+  .topbar-logo .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+
+  .topbar-nav { display: flex; gap: 2px; margin-left: 1rem; }
+  .nav-btn {
+    padding: 6px 14px; border-radius: 7px; border: none; background: none; cursor: pointer;
+    font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--text2); transition: all 0.15s;
+  }
+  .nav-btn:hover { background: var(--surface2); color: var(--text); }
+  .nav-btn.active { background: var(--surface2); color: var(--text); }
+
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .user-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px;
+    font-size: 14px;
+  }
+  .user-chip .avatar {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--accent2);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;
+    color: #fff;
+  }
+  .badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    background: var(--accent-glow); color: var(--accent); letter-spacing: 0.4px; text-transform: uppercase;
+  }
+
+  /* MAIN CONTENT */
+  .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+  .page-header h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.4px; }
+  .page-header p { color: var(--text2); font-size: 14px; margin-top: 3px; }
+
+  /* EVENTS LIST */
+  .events-grid { display: grid; gap: 12px; }
+
+  .event-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 1rem;
+  }
+  .event-card:hover { border-color: var(--border2); background: var(--surface2); }
+
+  .event-card .week-badge {
+    background: var(--accent-glow); color: var(--accent); border-radius: 8px;
+    padding: 8px 14px; text-align: center; min-width: 80px; flex-shrink: 0;
+  }
+  .event-card .week-badge .month { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
+  .event-card .week-badge .days { font-size: 18px; font-weight: 600; font-family: var(--mono); }
+
+  .event-card .event-info { flex: 1; }
+  .event-card .event-title { font-weight: 600; font-size: 16px; }
+  .event-card .event-meta { color: var(--text2); font-size: 13px; margin-top: 3px; }
+
+  .event-card .event-stats { display: flex; gap: 12px; flex-shrink: 0; }
+  .stat-pill {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 13px; padding: 4px 10px; border-radius: 20px;
+  }
+  .stat-pill.green { background: var(--green-bg); color: var(--green); }
+  .stat-pill.red { background: var(--red-bg); color: var(--red); }
+  .stat-pill.amber { background: var(--amber-bg); color: var(--amber); }
+
+  /* WEEKLY CALENDAR VIEW */
+  .week-grid {
+    display: grid;
+    grid-template-columns: 140px repeat(7, 1fr);
+    border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+    background: var(--surface);
+  }
+
+  .week-grid-cell {
+    padding: 12px 10px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .week-grid-cell:nth-child(8n) { border-right: none; }
+
+  .day-header {
+    background: var(--surface2); text-align: center; font-weight: 600; font-size: 13px;
+  }
+  .day-header .day-name { color: var(--text2); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; }
+  .day-header .day-num { font-size: 18px; font-weight: 600; font-family: var(--mono); margin-top: 2px; }
+  .day-header.today .day-num { color: var(--accent); }
+  .day-header.weekend { opacity: 0.5; }
+
+  .user-row-label {
+    background: var(--surface2); display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-right: 1px solid var(--border2) !important;
+  }
+  .user-row-label .mini-avatar {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--accent2);
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .user-row-label .uname { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .avail-cell {
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: background 0.1s; min-height: 52px;
+  }
+  .avail-cell.mine { cursor: pointer; }
+  .avail-cell.mine:hover { background: var(--surface3); }
+  .avail-cell.weekend { opacity: 0.4; pointer-events: none; }
+
+  .avail-pill {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+    transition: all 0.15s;
+  }
+  .avail-pill.available { background: var(--green-bg); color: var(--green); }
+  .avail-pill.unavailable { background: var(--red-bg); color: var(--red); }
+  .avail-pill.maybe { background: var(--amber-bg); color: var(--amber); }
+  .avail-pill.empty { background: var(--surface3); color: var(--text3); }
+
+  .corner-cell { background: var(--surface2); }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 16px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-dot.green { background: var(--green); }
+  .legend-dot.red { background: var(--red); }
+  .legend-dot.amber { background: var(--amber); }
+  .legend-dot.gray { background: var(--text3); }
+
+  /* SUMMARY ROW */
+  .summary-row {
+    display: grid;
+    grid-template-columns: 140px repeat(7, 1fr);
+    border-top: 2px solid var(--border2);
+    background: var(--surface);
+  }
+
+  .summary-cell {
+    padding: 10px; text-align: center; font-size: 12px; border-right: 1px solid var(--border);
+  }
+  .summary-cell:last-child { border-right: none; }
+  .summary-cell .count { font-size: 18px; font-weight: 600; font-family: var(--mono); color: var(--green); }
+  .summary-cell .label-s { color: var(--text2); font-size: 11px; }
+  .summary-label { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem;
+  }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg);
+    width: 100%; max-width: 480px; padding: 2rem;
+  }
+  .modal h3 { font-size: 18px; font-weight: 600; margin-bottom: 1.25rem; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 1.5rem; }
+
+  /* ADMIN TABLE */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid var(--border2); }
+  .data-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+
+  .role-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .role-badge.admin { background: var(--accent-glow); color: var(--accent); }
+  .role-badge.user { background: var(--surface3); color: var(--text2); }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-dot.active { background: var(--green); }
+  .status-dot.inactive { background: var(--red); }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+
+  select {
+    background: var(--bg); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 10px 14px; color: var(--text); font-family: var(--font); font-size: 15px; outline: none; width: 100%;
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
+    padding: 10px 20px; border-radius: 100px; font-size: 14px; font-weight: 500;
+    z-index: 999; transition: transform 0.25s ease; white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 4rem 2rem; color: var(--text2); }
+  .empty .icon { font-size: 48px; margin-bottom: 1rem; opacity: 0.3; }
+  .empty h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+  .section-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1rem; }
+
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--text2); font-size: 14px; margin-bottom: 1.25rem; cursor: pointer; border: none; background: none; font-family: var(--font); padding: 0; transition: color 0.15s; }
+  .back-btn:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="icon">📅</div>
+      <div>
+        <h1>Availability</h1>
+        <span>Team weekly scheduler</span>
+      </div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign in</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+    </div>
+    <div id="auth-error"></div>
+    <div id="login-form">
+      <div class="form-group"><label>Username</label><input type="text" id="login-user" placeholder="your username" autocomplete="username"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary" onclick="doLogin()" id="login-btn">Sign in</button>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="form-group"><label>Username</label><input type="text" id="reg-user" placeholder="choose a username" autocomplete="username"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="min 6 characters" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"></div>
+      <button class="btn btn-primary" onclick="doRegister()" id="register-btn">Create account</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-logo"><div class="dot"></div>Availability</div>
+    <nav class="topbar-nav">
+      <button class="nav-btn active" onclick="showPage('events')" id="nav-events">Events</button>
+      <button class="nav-btn" onclick="showPage('admin')" id="nav-admin" style="display:none">Admin</button>
+    </nav>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar"></div>
+        <span id="user-label"></span>
+        <span class="badge" id="user-role-badge"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- EVENTS PAGE -->
+    <div class="page active" id="page-events">
+      <div class="page-header">
+        <div>
+          <h2>Weekly Events</h2>
+          <p>Click an event to view and set your availability</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCreateEvent()" id="create-event-btn" style="display:none">+ New Event</button>
+      </div>
+      <div class="events-grid" id="events-list"><div class="spinner"></div></div>
+    </div>
+
+    <!-- EVENT DETAIL PAGE -->
+    <div class="page" id="page-event-detail">
+      <button class="back-btn" onclick="showPage('events')">← Back to events</button>
+      <div class="page-header">
+        <div>
+          <h2 id="detail-title">Event</h2>
+          <p id="detail-dates" style="color:var(--text2);font-size:14px;margin-top:3px;"></p>
+        </div>
+        <div style="display:flex;gap:8px;" id="detail-admin-btns"></div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot green"></div>Available</div>
+        <div class="legend-item"><div class="legend-dot amber"></div>Maybe</div>
+        <div class="legend-item"><div class="legend-dot red"></div>Unavailable</div>
+        <div class="legend-item"><div class="legend-dot gray"></div>No response</div>
+        <span style="margin-left:auto;font-size:13px;color:var(--text2);">Click your row to cycle status</span>
+      </div>
+
+      <div id="week-grid-wrap"></div>
+    </div>
+
+    <!-- ADMIN PAGE -->
+    <div class="page" id="page-admin">
+      <div class="page-header">
+        <div><h2>User Management</h2><p>Manage accounts and roles</p></div>
+        <button class="btn btn-primary" onclick="openCreateUser()">+ New User</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th></th></tr></thead>
+          <tbody id="users-tbody"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div id="modal-container"></div>
+<div id="toast"></div>
+
+<script>
+const API = '/api';
+let token = localStorage.getItem('avail_token');
+let currentUser = null;
+let currentEventId = null;
+let currentEventData = null;
+
+// ─── API HELPERS ───────────────────────────────────────────────
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API + path, { headers, ...opts });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ─── AUTH ───────────────────────────────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? '' : 'none';
+  document.getElementById('auth-error').innerHTML = '';
+}
+
+async function doLogin() {
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  clearAuthError();
+  try {
+    const data = await api('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: document.getElementById('login-user').value, password: document.getElementById('login-pass').value })
+    });
+    token = data.token;
+    localStorage.setItem('avail_token', token);
+    currentUser = data.user;
+    enterApp();
+  } catch(e) {
+    showAuthError(e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+
+async function doRegister() {
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  clearAuthError();
+  try {
+    await api('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username: document.getElementById('reg-user').value, email: document.getElementById('reg-email').value, password: document.getElementById('reg-pass').value })
+    });
+    showAuthSuccess('Account created! Sign in now.');
+    switchAuthTab('login'); document.querySelectorAll('.auth-tab')[0].classList.add('active');
+  } catch(e) {
+    showAuthError(e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create account';
+  }
+}
+
+function showAuthError(msg) { document.getElementById('auth-error').innerHTML = `<div class="error-msg">${msg}</div>`; }
+function showAuthSuccess(msg) { document.getElementById('auth-error').innerHTML = `<div class="success-msg">${msg}</div>`; }
+function clearAuthError() { document.getElementById('auth-error').innerHTML = ''; }
+
+function doLogout() {
+  token = null; currentUser = null;
+  localStorage.removeItem('avail_token');
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+async function enterApp() {
+  if (!currentUser) {
+    try { currentUser = await api('/auth/me'); } catch(e) { doLogout(); return; }
+  }
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('user-avatar').textContent = currentUser.username[0].toUpperCase();
+  document.getElementById('user-label').textContent = currentUser.username;
+  document.getElementById('user-role-badge').textContent = currentUser.role;
+  if (currentUser.role === 'admin') {
+    document.getElementById('nav-admin').style.display = '';
+    document.getElementById('create-event-btn').style.display = '';
+  }
+  showPage('events');
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + (name === 'event-detail' ? 'event-detail' : name)).classList.add('active');
+  const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
+  if (navEl) navEl.classList.add('active');
+  if (name === 'events') loadEvents();
+  if (name === 'admin') loadUsers();
+}
+
+// ─── EVENTS ─────────────────────────────────────────────────────
+async function loadEvents() {
+  const el = document.getElementById('events-list');
+  el.innerHTML = '<div style="padding:2rem;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const events = await api('/events/');
+    if (!events.length) {
+      el.innerHTML = `<div class="empty"><div class="icon">📅</div><h3>No events yet</h3><p>${currentUser.role==='admin'?'Create your first weekly event above.':'Ask an admin to create an event.'}</p></div>`;
+      return;
+    }
+    el.innerHTML = '';
+    for (const ev of events) {
+      const start = new Date(ev.week_start + 'T00:00:00');
+      const end = new Date(ev.week_end + 'T00:00:00');
+      const card = document.createElement('div');
+      card.className = 'event-card';
+      card.onclick = () => loadEventDetail(ev.id);
+      card.innerHTML = `
+        <div class="week-badge">
+          <div class="month">${start.toLocaleDateString('en-US',{month:'short'})}</div>
+          <div class="days">${start.getDate()}–${end.getDate()}</div>
+        </div>
+        <div class="event-info">
+          <div class="event-title">${esc(ev.title)}</div>
+          <div class="event-meta">${ev.description||'No description'} &nbsp;·&nbsp; Created by ${esc(ev.created_by_username)}</div>
+        </div>
+      `;
+      el.appendChild(card);
+    }
+  } catch(e) {
+    el.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function loadEventDetail(eventId) {
+  currentEventId = eventId;
+  showPage('event-detail');
+  document.getElementById('week-grid-wrap').innerHTML = '<div style="padding:3rem;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const data = await api(`/events/${eventId}`);
+    currentEventData = data;
+    const ev = data.event;
+    document.getElementById('detail-title').textContent = ev.title;
+    const s = new Date(ev.week_start+'T00:00:00'), e = new Date(ev.week_end+'T00:00:00');
+    document.getElementById('detail-dates').textContent = `${fmtDate(s)} – ${fmtDate(e)}`;
+
+    const adminBtns = document.getElementById('detail-admin-btns');
+    if (currentUser.role === 'admin') {
+      adminBtns.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="openEditEvent(${ev.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Delete</button>`;
+    } else { adminBtns.innerHTML = ''; }
+
+    renderWeekGrid(data);
+  } catch(e) {
+    document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+function renderWeekGrid(data) {
+  const ev = data.event;
+  const users = data.users;
+  const availability = data.availability;
+
+  // Build day list for the week (Mon–Sun from week_start)
+  const days = [];
+  const start = new Date(ev.week_start + 'T00:00:00');
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    days.push(d);
+  }
+
+  // Index availability: user_id -> date -> {status}
+  const avMap = {};
+  for (const a of availability) {
+    if (!avMap[a.user_id]) avMap[a.user_id] = {};
+    avMap[a.user_id][a.date] = a.status;
+  }
+
+  const today = new Date().toISOString().slice(0,10);
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const statusEmoji = { available: '✓', unavailable: '✗', maybe: '~', '': '' };
+  const statusOrder = ['available', 'unavailable', 'maybe', ''];
+  const nextStatus = { 'available': 'unavailable', 'unavailable': 'maybe', 'maybe': '', '': 'available' };
+
+  let html = `<div class="week-grid">`;
+  // Header row
+  html += `<div class="week-grid-cell corner-cell day-header"></div>`;
+  for (const d of days) {
+    const iso = d.toISOString().slice(0,10);
+    const isWknd = d.getDay()===0||d.getDay()===6;
+    html += `<div class="week-grid-cell day-header${iso===today?' today':''}${isWknd?' weekend':''}">
+      <div class="day-name">${dayNames[d.getDay()]}</div>
+      <div class="day-num">${d.getDate()}</div>
+    </div>`;
+  }
+
+  // User rows
+  for (const user of users) {
+    const isMine = user.id === currentUser.id;
+    html += `<div class="week-grid-cell user-row-label">
+      <div class="mini-avatar">${user.username[0].toUpperCase()}</div>
+      <div class="uname">${esc(user.username)}</div>
+    </div>`;
+    for (const d of days) {
+      const iso = d.toISOString().slice(0,10);
+      const isWknd = d.getDay()===0||d.getDay()===6;
+      const status = (avMap[user.id]||{})[iso] || '';
+      const pillClass = status || 'empty';
+      const symbol = statusEmoji[status] || '·';
+      if (isMine) {
+        html += `<div class="week-grid-cell avail-cell mine${isWknd?' weekend':''}" 
+          data-user="${user.id}" data-date="${iso}" data-status="${status}"
+          onclick="cycleAvailability(this, ${currentEventId}, '${iso}', '${status}')">
+          <div class="avail-pill ${pillClass}">${symbol}</div>
+        </div>`;
+      } else {
+        html += `<div class="week-grid-cell avail-cell${isWknd?' weekend':''}">
+          <div class="avail-pill ${pillClass}">${symbol}</div>
+        </div>`;
+      }
+    }
+  }
+  html += `</div>`;
+
+  // Summary row
+  html += `<div class="summary-row">
+    <div class="summary-cell summary-label">Available</div>`;
+  for (const d of days) {
+    const iso = d.toISOString().slice(0,10);
+    const count = users.filter(u => (avMap[u.id]||{})[iso] === 'available').length;
+    const total = users.filter(u => (avMap[u.id]||{})[iso]).length;
+    html += `<div class="summary-cell">
+      <div class="count">${count}</div>
+      <div class="label-s">of ${users.length}</div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  document.getElementById('week-grid-wrap').innerHTML = html;
+}
+
+async function cycleAvailability(cell, eventId, date, currentStatus) {
+  const ns = { 'available': 'unavailable', 'unavailable': 'maybe', 'maybe': '', '': 'available' };
+  const newStatus = ns[currentStatus] ?? 'available';
+  const statusEmoji = { available: '✓', unavailable: '✗', maybe: '~', '': '·' };
+
+  // Optimistic UI
+  const pill = cell.querySelector('.avail-pill');
+  cell.dataset.status = newStatus;
+  pill.className = `avail-pill ${newStatus || 'empty'}`;
+  pill.textContent = statusEmoji[newStatus] ?? '·';
+
+  try {
+    if (newStatus) {
+      await api(`/availability/event/${eventId}/set`, {
+        method: 'POST',
+        body: JSON.stringify({ date, status: newStatus })
+      });
+    } else {
+      // Set to empty = remove — we'll just set 'unavailable' minimum; treat '' as no preference
+      await api(`/availability/event/${eventId}/set`, {
+        method: 'POST',
+        body: JSON.stringify({ date, status: 'unavailable' })
+      });
+      // Actually cycle to available on next click
+    }
+    updateSummaryRow();
+  } catch(e) {
+    toast('Failed to save: ' + e.message);
+    // Revert
+    pill.className = `avail-pill ${currentStatus || 'empty'}`;
+    pill.textContent = statusEmoji[currentStatus] ?? '·';
+  }
+}
+
+function updateSummaryRow() {
+  // Recount from DOM
+  const grid = document.querySelector('.week-grid');
+  if (!grid) return;
+  const cells = grid.querySelectorAll('.avail-cell[data-date]');
+  const dateMap = {};
+  const allDates = new Set();
+  const allUsers = new Set();
+  cells.forEach(c => {
+    const date = c.dataset.date;
+    const user = c.dataset.user;
+    const status = c.dataset.status;
+    allDates.add(date);
+    allUsers.add(user);
+    if (!dateMap[date]) dateMap[date] = { available: 0, total: 0 };
+    if (status === 'available') dateMap[date].available++;
+    if (status) dateMap[date].total++;
+  });
+  const summaries = document.querySelectorAll('.summary-cell:not(.summary-label)');
+  const dates = [...allDates].sort();
+  summaries.forEach((s, i) => {
+    if (dates[i]) {
+      const d = dateMap[dates[i]] || { available: 0, total: 0 };
+      s.querySelector('.count').textContent = d.available;
+    }
+  });
+}
+
+// ─── CREATE/EDIT EVENT MODAL ─────────────────────────────────────
+function openCreateEvent() {
+  showModal(`
+    <h3>New weekly event</h3>
+    <div id="modal-error"></div>
+    <div class="form-group"><label>Title</label><input type="text" id="m-title" placeholder="e.g. Sprint Week 12"></div>
+    <div class="form-group"><label>Description</label><input type="text" id="m-desc" placeholder="Optional description"></div>
+    <div class="form-group"><label>Week start (Monday)</label><input type="date" id="m-start"></div>
+    <div class="form-group"><label>Week end (Sunday)</label><input type="date" id="m-end"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="submitCreateEvent()">Create event</button>
+    </div>
+  `);
+  // Default to current week
+  const now = new Date();
+  const day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (day===0?6:day-1));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  document.getElementById('m-start').value = mon.toISOString().slice(0,10);
+  document.getElementById('m-end').value = sun.toISOString().slice(0,10);
+}
+
+async function submitCreateEvent() {
+  const title = document.getElementById('m-title').value.trim();
+  const desc = document.getElementById('m-desc').value.trim();
+  const start = document.getElementById('m-start').value;
+  const end = document.getElementById('m-end').value;
+  if (!title || !start || !end) { document.getElementById('modal-error').innerHTML = '<div class="error-msg">All fields required</div>'; return; }
+  try {
+    await api('/events/', { method:'POST', body: JSON.stringify({ title, description: desc, week_start: start, week_end: end }) });
+    closeModal(); toast('Event created!'); loadEvents();
+  } catch(e) {
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+function openEditEvent(id) {
+  const ev = currentEventData?.event;
+  if (!ev) return;
+  showModal(`
+    <h3>Edit event</h3>
+    <div id="modal-error"></div>
+    <div class="form-group"><label>Title</label><input type="text" id="m-title" value="${esc(ev.title)}"></div>
+    <div class="form-group"><label>Description</label><input type="text" id="m-desc" value="${esc(ev.description||'')}"></div>
+    <div class="form-group"><label>Week start</label><input type="date" id="m-start" value="${ev.week_start}"></div>
+    <div class="form-group"><label>Week end</label><input type="date" id="m-end" value="${ev.week_end}"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="submitEditEvent(${id})">Save changes</button>
+    </div>
+  `);
+}
+
+async function submitEditEvent(id) {
+  try {
+    await api(`/events/${id}`, { method:'PUT', body: JSON.stringify({
+      title: document.getElementById('m-title').value,
+      description: document.getElementById('m-desc').value,
+      week_start: document.getElementById('m-start').value,
+      week_end: document.getElementById('m-end').value
+    })});
+    closeModal(); toast('Event updated!'); loadEventDetail(id);
+  } catch(e) {
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event and all availability data?')) return;
+  try {
+    await api(`/events/${id}`, { method:'DELETE' });
+    toast('Event deleted'); showPage('events');
+  } catch(e) { toast(e.message); }
+}
+
+// ─── ADMIN: USERS ────────────────────────────────────────────────
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:2rem;text-align:center"><div class="spinner"></div></td></tr>';
+  try {
+    const users = await api('/admin/users');
+    tbody.innerHTML = '';
+    for (const u of users) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${esc(u.username)}</strong></td>
+        <td style="color:var(--text2)">${esc(u.email)}</td>
+        <td><span class="role-badge ${u.role}">${u.role}</span></td>
+        <td><span class="status-dot ${u.is_active?'active':'inactive'}"></span>${u.is_active?'Active':'Inactive'}</td>
+        <td style="color:var(--text2);font-size:13px">${new Date(u.created_at).toLocaleDateString()}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="openEditUser(${u.id},'${esc(u.username)}','${esc(u.email)}','${u.role}',${u.is_active})">Edit</button>
+          ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">Delete</button>`:''}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="error-msg">${e.message}</div></td></tr>`;
+  }
+}
+
+function openCreateUser() {
+  showModal(`
+    <h3>Create user</h3>
+    <div id="modal-error"></div>
+    <div class="form-group"><label>Username</label><input type="text" id="m-uname"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="m-email"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="m-pass"></div>
+    <div class="form-group"><label>Role</label><select id="m-role"><option value="user">User</option><option value="admin">Admin</option></select></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="submitCreateUser()">Create</button>
+    </div>
+  `);
+}
+
+async function submitCreateUser() {
+  try {
+    await api('/admin/users', { method:'POST', body: JSON.stringify({
+      username: document.getElementById('m-uname').value,
+      email: document.getElementById('m-email').value,
+      password: document.getElementById('m-pass').value,
+      role: document.getElementById('m-role').value
+    })});
+    closeModal(); toast('User created!'); loadUsers();
+  } catch(e) {
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+function openEditUser(id, username, email, role, isActive) {
+  showModal(`
+    <h3>Edit ${username}</h3>
+    <div id="modal-error"></div>
+    <div class="form-group"><label>Role</label>
+      <select id="m-role"><option value="user"${role==='user'?' selected':''}>User</option><option value="admin"${role==='admin'?' selected':''}>Admin</option></select>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="m-active"><option value="1"${isActive?' selected':''}>Active</option><option value="0"${!isActive?' selected':''}>Inactive</option></select>
+    </div>
+    <div class="form-group"><label>New password <span style="color:var(--text3)">(leave blank to keep)</span></label><input type="password" id="m-pass" placeholder="min 6 characters"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="submitEditUser(${id})">Save</button>
+    </div>
+  `);
+}
+
+async function submitEditUser(id) {
+  const body = {
+    role: document.getElementById('m-role').value,
+    is_active: parseInt(document.getElementById('m-active').value)
+  };
+  const pass = document.getElementById('m-pass').value;
+  if (pass) body.password = pass;
+  try {
+    await api(`/admin/users/${id}`, { method:'PUT', body: JSON.stringify(body) });
+    closeModal(); toast('User updated!'); loadUsers();
+  } catch(e) {
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function deleteUser(id) {
+  if (!confirm('Delete this user? This cannot be undone.')) return;
+  try {
+    await api(`/admin/users/${id}`, { method:'DELETE' });
+    toast('User deleted'); loadUsers();
+  } catch(e) { toast(e.message); }
+}
+
+// ─── MODAL & TOAST HELPERS ───────────────────────────────────────
+function showModal(html) {
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal">${html}</div>
+    </div>`;
+}
+function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d) { return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
+
+// ─── BOOT ────────────────────────────────────────────────────────
+if (token) {
+  enterApp();
+} else {
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+services:
+  backend:
+    build: ./backend
+    container_name: availability-backend
+    restart: unless-stopped
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - DATABASE_PATH=/data/calendar.db
+      - FLASK_DEBUG=${FLASK_DEBUG:-false}
+    volumes:
+      - ./data:/data
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: availability-frontend
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
