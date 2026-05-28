@@ -220,7 +220,6 @@
   .avail-cell {
     display: flex; align-items: center; justify-content: center;
     transition: background 0.1s; height: 56px; padding: 6px; box-sizing: border-box;
-    overflow: hidden;
   }
   /* weekends are fully interactive */
 
@@ -237,9 +236,12 @@
   .avail-pill-label {
     width: 100%; border-radius: 7px; padding: 0;
     font-size: 12px; font-family: var(--font); text-align: center;
-    background: var(--surface3); color: var(--text3);
+    background: transparent; color: var(--text3);
     display: flex; align-items: center; justify-content: center;
     height: 32px; min-height: 32px; max-height: 32px; flex-shrink: 0;
+  }
+  .avail-pill-label.empty {
+    background: var(--surface3); border-radius: 7px;
   }
   .avail-pill-label.available { background: var(--green-bg); color: var(--green); }
   .avail-pill-label.unavailable { background: var(--red-bg); color: var(--red); }
@@ -490,6 +492,7 @@ let token = localStorage.getItem('avail_token');
 let currentUser = null;
 let currentEventId = null;
 let currentEventData = null;
+let liveAvailability = {}; // date -> { userId -> status }
 
 // ─── API HELPERS ───────────────────────────────────────────────
 async function api(path, opts = {}) {
@@ -623,6 +626,13 @@ function renderWeekGrid(data) {
   const users = data.users;
   const availability = data.availability;
 
+  // Build live mirror of availability state for accurate summary recounts
+  liveAvailability = {};
+  for (const a of availability) {
+    if (!liveAvailability[a.date]) liveAvailability[a.date] = {};
+    liveAvailability[a.date][a.user_id] = a.status;
+  }
+
   // Build day list for the week (Mon–Sun from week_start)
   const days = [];
   const start = new Date(ev.week_start + 'T00:00:00');
@@ -724,7 +734,9 @@ async function setAvailability(selectEl, eventId, date) {
       method: 'POST',
       body: JSON.stringify({ date, status: newStatus || 'available' })
     });
-    // Update the data-date cell's sibling summary
+    // Update live mirror
+    if (!liveAvailability[date]) liveAvailability[date] = {};
+    liveAvailability[date][currentUser.id] = newStatus || 'available';
     updateSummaryRow();
   } catch(e) {
     selectEl.className = prev;
@@ -735,39 +747,16 @@ async function setAvailability(selectEl, eventId, date) {
 }
 
 function updateSummaryRow() {
+  // Count available per date from the live mirror (all users, always accurate)
   const grid = document.querySelector('.week-grid');
   if (!grid) return;
-  const dateMap = {};
-  // Count pills (other users)
-  grid.querySelectorAll('.avail-cell:not([data-user]) .avail-pill').forEach(pill => {
-    const date = pill.closest('.avail-cell')?.previousElementSibling?.dataset?.date;
-  });
-  // Count selects (current user rows)
-  grid.querySelectorAll('.avail-select').forEach(sel => {
-    const date = sel.closest('.avail-cell').dataset.date || '';
-    if (!date) return;
-    if (!dateMap[date]) dateMap[date] = 0;
-    if (sel.value === 'available') dateMap[date]++;
-  });
-  // Count pills for other users
-  grid.querySelectorAll('.avail-cell:not(:has(.avail-select)) .avail-pill').forEach(pill => {
-    const cell = pill.closest('.avail-cell');
-    const date = cell.dataset.date;
-    if (!date) return;
-    if (!dateMap[date]) dateMap[date] = 0;
-    if (pill.classList.contains('available')) dateMap[date]++;
-  });
-  const summaries = document.querySelectorAll('.summary-cell:not(.summary-label)');
-  const dates = Object.keys(dateMap).sort();
-  // Re-query all date columns in order from header
-  const dayHeaders = [...grid.querySelectorAll('.day-header:not(.corner-cell)')];
-  summaries.forEach((s, i) => {
-    const dayEl = dayHeaders[i];
-    if (!dayEl) return;
-    const iso = dayEl.dataset.iso;
-    if (iso !== undefined) {
-      s.querySelector('.count').textContent = dateMap[iso] || 0;
-    }
+  const users = currentEventData?.users || [];
+  const dayHeaders = [...grid.querySelectorAll('.day-header[data-iso]')];
+  const summaries = [...document.querySelectorAll('.summary-cell:not(.summary-label)')];
+  dayHeaders.forEach((hdr, i) => {
+    const iso = hdr.dataset.iso;
+    const count = users.filter(u => (liveAvailability[iso] || {})[u.id] === 'available').length;
+    if (summaries[i]) summaries[i].querySelector('.count').textContent = count;
   });
 }
 
