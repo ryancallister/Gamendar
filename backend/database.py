@@ -59,6 +59,22 @@ def init_db(app):
                 FOREIGN KEY (user_id) REFERENCES users(id),
                 FOREIGN KEY (event_id) REFERENCES events(id)
             );
+
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS discord_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id INTEGER,
+                message_type TEXT NOT NULL,
+                date TEXT,
+                sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                success INTEGER NOT NULL DEFAULT 1,
+                error TEXT,
+                FOREIGN KEY (event_id) REFERENCES events(id)
+            );
         ''')
 
         # Create default admin if none exists

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from database import get_db
 from auth_utils import token_required, admin_required
+from discord_service import notify_event_created
 
 events_bp = Blueprint('events', __name__)
 
@@ -67,6 +68,10 @@ def create_event(current_user):
     db.commit()
 
     event = db.execute('SELECT * FROM events WHERE id = ?', (cursor.lastrowid,)).fetchone()
+    try:
+        notify_event_created(db, dict(event))
+    except Exception as e:
+        print(f'Discord notify error: {e}')
     return jsonify(dict(event)), 201
 
 

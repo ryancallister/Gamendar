@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from database import get_db
 from auth_utils import token_required, admin_required
+from discord_service import check_and_notify_all_available
 
 availability_bp = Blueprint('availability', __name__)
 
@@ -45,6 +46,11 @@ def set_availability(current_user, event_id):
             updated_at = CURRENT_TIMESTAMP
     ''', (current_user['id'], event_id, data['date'], status, data.get('note', '')))
     db.commit()
+
+    try:
+        check_and_notify_all_available(db, event_id, data['date'])
+    except Exception as e:
+        print(f'Discord all-available check error: {e}')
 
     return jsonify({'message': 'Availability saved'})
 

@@ -5,6 +5,7 @@ from routes.auth import auth_bp
 from routes.events import events_bp
 from routes.availability import availability_bp
 from routes.admin import admin_bp
+from routes.discord import discord_bp, start_scheduler
 import os
 
 app = Flask(__name__)
@@ -19,6 +20,10 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(events_bp, url_prefix='/api/events')
 app.register_blueprint(availability_bp, url_prefix='/api/availability')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
+app.register_blueprint(discord_bp, url_prefix='/api/discord')
+
+# Start daily summary scheduler
+start_scheduler(app)
 
 @app.route('/api/health')
 def health():

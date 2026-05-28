@@ -478,6 +478,53 @@
           <tbody id="users-tbody"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
         </table>
       </div>
+
+      <div style="margin-top:2.5rem">
+        <div class="page-header" style="margin-bottom:1.25rem">
+          <div><h2>Discord Integration</h2><p>Post availability updates to a Discord channel</p></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="discord-status-badge"></span>
+            <button class="btn btn-ghost btn-sm" onclick="testDiscord()">Send test</button>
+            <button class="btn btn-primary btn-sm" onclick="saveDiscordSettings()" style="width:auto">Save</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="padding:1.5rem">
+          <div id="discord-settings-error"></div>
+          <div style="display:grid;grid-template-columns:1fr;gap:1rem">
+            <div class="form-group">
+              <label>Webhook URL</label>
+              <input type="password" id="ds-webhook" placeholder="https://discord.com/api/webhooks/…" autocomplete="off" style="font-family:var(--mono);font-size:13px">
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">
+                In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL
+              </div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0">
+            <div class="form-group">
+              <label>Daily summary time <span style="color:var(--text3);font-size:12px">(server local time, 24h)</span></label>
+              <input type="time" id="ds-daily-time" value="09:00">
+            </div>
+            <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end">
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:0">
+                <input type="checkbox" id="ds-enabled" style="width:18px;height:18px;accent-color:var(--accent)">
+                <span>Enable Discord notifications</span>
+              </label>
+            </div>
+          </div>
+          <div style="margin-top:1rem">
+            <p class="section-title" style="margin-bottom:0.5rem">What gets posted automatically</p>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)">
+              <div>📅 <strong style="color:var(--text)">New event</strong> — when an admin creates a new weekly event</div>
+              <div>📋 <strong style="color:var(--text)">Daily summary</strong> — who's available today, posted at the configured time</div>
+              <div>🎉 <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
+            </div>
+          </div>
+          <div style="margin-top:1.5rem">
+            <p class="section-title" style="margin-bottom:0.5rem">Recent log</p>
+            <div id="discord-log-list" style="font-size:13px;color:var(--text2)">Loading…</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -560,7 +607,7 @@ function showPage(name) {
   const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
   if (navEl) navEl.classList.add('active');
   if (name === 'events') loadEvents();
-  if (name === 'admin') loadUsers();
+  if (name === 'admin') { loadUsers(); loadDiscordSettings(); }
 }
 
 // ─── EVENTS ─────────────────────────────────────────────────────
@@ -611,7 +658,10 @@ async function loadEventDetail(eventId) {
 
     const adminBtns = document.getElementById('detail-admin-btns');
     if (currentUser.role === 'admin') {
-      adminBtns.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="openEditEvent(${ev.id})">Edit</button>
+      adminBtns.innerHTML = `
+        <button class="btn btn-ghost btn-sm" onclick="sendDiscordAnnouncement(${ev.id})" title="Re-send event announcement to Discord">📣 Announce</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendDiscordSummary(${ev.id})" title="Send today's availability summary to Discord">📋 Summary</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditEvent(${ev.id})">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Delete</button>`;
     } else { adminBtns.innerHTML = ''; }
 
@@ -834,6 +884,101 @@ async function deleteEvent(id) {
     await api(`/events/${id}`, { method:'DELETE' });
     toast('Event deleted'); showPage('events');
   } catch(e) { toast(e.message); }
+}
+
+
+// ─── DISCORD ─────────────────────────────────────────────────────
+async function loadDiscordSettings() {
+  try {
+    const data = await api('/discord/settings');
+    // Show masked URL if already set, otherwise blank for new entry
+    document.getElementById('ds-webhook').value = data.discord_webhook_url || '';
+    document.getElementById('ds-webhook').placeholder = data.discord_webhook_set
+      ? 'Webhook URL set — paste a new one to replace'
+      : 'https://discord.com/api/webhooks/…';
+    document.getElementById('ds-daily-time').value = data.discord_daily_time || '09:00';
+    document.getElementById('ds-enabled').checked = data.discord_enabled === 'true';
+    const badge = document.getElementById('discord-status-badge');
+    if (data.discord_configured) {
+      badge.innerHTML = '<span class="badge" style="background:var(--green-bg);color:var(--green)">Connected</span>';
+    } else {
+      badge.innerHTML = '<span class="badge" style="background:var(--surface3);color:var(--text2)">Not configured</span>';
+    }
+    loadDiscordLog();
+  } catch(e) {
+    console.error('Failed to load discord settings', e);
+  }
+}
+
+async function saveDiscordSettings() {
+  const errEl = document.getElementById('discord-settings-error');
+  errEl.innerHTML = '';
+  try {
+    await api('/discord/settings', {
+      method: 'POST',
+      body: JSON.stringify({
+        discord_webhook_url: document.getElementById('ds-webhook').value,
+        discord_daily_time: document.getElementById('ds-daily-time').value,
+        discord_enabled: document.getElementById('ds-enabled').checked ? 'true' : 'false'
+      })
+    });
+    toast('Discord settings saved!');
+    loadDiscordSettings();
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function testDiscord() {
+  const errEl = document.getElementById('discord-settings-error');
+  errEl.innerHTML = '';
+  try {
+    const data = await api('/discord/test', { method: 'POST' });
+    toast(data.message);
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function loadDiscordLog() {
+  const el = document.getElementById('discord-log-list');
+  if (!el) return;
+  try {
+    const rows = await api('/discord/log');
+    if (!rows.length) { el.textContent = 'No messages sent yet.'; return; }
+    const typeLabels = { event_created: '📅 Announcement', daily_summary: '📋 Daily summary', all_available: '🎉 All available' };
+    el.innerHTML = rows.slice(0, 10).map(r => `
+      <div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="color:${r.success?'var(--green)':'var(--red)'}">●</span>
+        <span style="flex:1">${typeLabels[r.message_type] || r.message_type}${r.event_title ? ' · ' + esc(r.event_title) : ''}${r.date ? ' · ' + r.date : ''}</span>
+        <span style="color:var(--text3);font-size:11px">${new Date(r.sent_at).toLocaleString()}</span>
+        ${r.error ? `<span style="color:var(--red);font-size:11px" title="${esc(r.error)}">⚠ error</span>` : ''}
+      </div>`).join('');
+  } catch(e) {
+    el.textContent = 'Could not load log.';
+  }
+}
+
+async function sendDiscordAnnouncement(eventId) {
+  try {
+    const data = await api(`/discord/send/announcement/${eventId}`, { method: 'POST' });
+    toast(data.message);
+  } catch(e) {
+    toast('Discord error: ' + e.message);
+  }
+}
+
+async function sendDiscordSummary(eventId) {
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    const data = await api(`/discord/send/summary/${eventId}`, {
+      method: 'POST',
+      body: JSON.stringify({ date: today })
+    });
+    toast(data.message);
+  } catch(e) {
+    toast('Discord error: ' + e.message);
+  }
 }
 
 // ─── ADMIN: USERS ────────────────────────────────────────────────
