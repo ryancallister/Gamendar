@@ -129,9 +129,13 @@ def notify_daily_summary(db, event_id, summary_date):
     if not event:
         return False, 'Event not found'
     users = db.execute('SELECT * FROM users WHERE is_active = 1 ORDER BY username').fetchall()
+    active_ids = tuple(u['id'] for u in users)
+    if not active_ids:
+        return False, 'No active users'
+    placeholders = ','.join('?' * len(active_ids))
     availability = db.execute(
-        'SELECT a.*, u.username FROM availability a JOIN users u ON a.user_id = u.id WHERE a.event_id = ?',
-        (event_id,)
+        f'SELECT a.*, u.username FROM availability a JOIN users u ON a.user_id = u.id WHERE a.event_id = ? AND a.user_id IN ({placeholders})',
+        (event_id, *active_ids)
     ).fetchall()
     url = get_setting(db, 'discord_webhook_url')
     success, error = send_webhook(url, build_daily_summary(event, availability, users, summary_date))
@@ -145,12 +149,14 @@ def check_and_notify_all_available(db, event_id, changed_date):
     users = db.execute('SELECT * FROM users WHERE is_active = 1').fetchall()
     if not users:
         return
+    active_ids = {u['id'] for u in users}
     rows = db.execute(
         'SELECT user_id, status FROM availability WHERE event_id = ? AND date = ?',
         (event_id, changed_date)
     ).fetchall()
-    avail_ids = {r['user_id'] for r in rows if r['status'] == 'available'}
-    if avail_ids != {u['id'] for u in users}:
+    # Only count active users
+    avail_ids = {r['user_id'] for r in rows if r['status'] == 'available' and r['user_id'] in active_ids}
+    if avail_ids != active_ids:
         return
     already = db.execute(
         'SELECT id FROM discord_log WHERE event_id = ? AND date = ? AND message_type = ? AND success = 1',
