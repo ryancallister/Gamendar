@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from database import get_db
 from auth_utils import token_required, admin_required
 from discord_service import notify_event_created
+from signal_service import notify_event_created as signal_notify_event_created
 
 events_bp = Blueprint('events', __name__)
 
@@ -72,6 +73,10 @@ def create_event(current_user):
         notify_event_created(db, dict(event))
     except Exception as e:
         print(f'Discord notify error: {e}')
+    try:
+        signal_notify_event_created(db, dict(event))
+    except Exception as e:
+        print(f'Signal notify error: {e}')
     return jsonify(dict(event)), 201
 
 

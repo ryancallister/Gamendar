@@ -541,6 +541,59 @@
           </div>
         </div>
       </div>
+
+      <div style="margin-top:2.5rem">
+        <div class="page-header" style="margin-bottom:1.25rem">
+          <div><h2>Signal Integration</h2><p>Post availability updates to a Signal group</p></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="signal-status-badge"></span>
+            <button class="btn btn-ghost btn-sm" onclick="testSignal()">Send test</button>
+            <button class="btn btn-primary btn-sm" onclick="saveSignalSettings()" style="width:auto">Save</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="padding:1.5rem">
+          <div id="signal-settings-error"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <div class="form-group">
+              <label>Signal API URL</label>
+              <input type="text" id="sig-url" placeholder="http://YOUR-UNRAID-IP:8739">
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">URL of your signal-cli-rest-api container</div>
+            </div>
+            <div class="form-group">
+              <label>Sender number</label>
+              <input type="text" id="sig-sender" placeholder="+12345678900">
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">The number registered with signal-cli</div>
+            </div>
+            <div class="form-group">
+              <label>Recipient <span style="color:var(--text3);font-size:12px">(group ID or phone number)</span></label>
+              <input type="text" id="sig-recipient" placeholder="group.XXXXXXXX… or +12345678900">
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">Get group ID via GET /v1/groups/&lt;sender&gt;</div>
+            </div>
+            <div class="form-group">
+              <label>Daily summary time <span style="color:var(--text3);font-size:12px">(server local time, 24h)</span></label>
+              <input type="time" id="sig-daily-time" value="09:00">
+            </div>
+          </div>
+          <div style="margin-top:0.5rem">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="sig-enabled" style="width:18px;height:18px;accent-color:var(--accent)">
+              <span>Enable Signal notifications</span>
+            </label>
+          </div>
+          <div style="margin-top:1rem">
+            <p class="section-title" style="margin-bottom:0.5rem">What gets posted automatically</p>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)">
+              <div>📅 <strong style="color:var(--text)">New event</strong> — when an admin creates a new weekly event</div>
+              <div>📋 <strong style="color:var(--text)">Daily summary</strong> — who's available today, posted at the configured time</div>
+              <div>🎉 <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
+            </div>
+          </div>
+          <div style="margin-top:1.5rem">
+            <p class="section-title" style="margin-bottom:0.5rem">Recent log</p>
+            <div id="signal-log-list" style="font-size:13px;color:var(--text2)">Loading…</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -623,7 +676,7 @@ function showPage(name) {
   const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
   if (navEl) navEl.classList.add('active');
   if (name === 'events') loadEvents();
-  if (name === 'admin') { loadUsers(); loadDiscordSettings(); }
+  if (name === 'admin') { loadUsers(); loadDiscordSettings(); loadSignalSettings(); }
 }
 
 // ─── EVENTS ─────────────────────────────────────────────────────
@@ -675,8 +728,10 @@ async function loadEventDetail(eventId) {
     const adminBtns = document.getElementById('detail-admin-btns');
     if (currentUser.role === 'admin') {
       adminBtns.innerHTML = `
-        <button class="btn btn-ghost btn-sm" onclick="sendDiscordAnnouncement(${ev.id})" title="Re-send event announcement to Discord">📣 Announce</button>
-        <button class="btn btn-ghost btn-sm" onclick="sendDiscordSummary(${ev.id})" title="Send today's availability summary to Discord">📋 Summary</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendDiscordAnnouncement(${ev.id})" title="Re-send event announcement to Discord">Discord 📣</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendDiscordSummary(${ev.id})" title="Send today's summary to Discord">Discord 📋</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendSignalAnnouncement(${ev.id})" title="Re-send event announcement via Signal">Signal 📣</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendSignalSummary(${ev.id})" title="Send today's summary via Signal">Signal 📋</button>
         <button class="btn btn-ghost btn-sm" onclick="openEditEvent(${ev.id})">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Delete</button>`;
     } else { adminBtns.innerHTML = ''; }
@@ -1025,6 +1080,100 @@ async function sendDiscordSummary(eventId) {
     toast(data.message);
   } catch(e) {
     toast('Discord error: ' + e.message);
+  }
+}
+
+// ─── SIGNAL ──────────────────────────────────────────────────────
+async function loadSignalSettings() {
+  try {
+    const data = await api('/signal/settings');
+    document.getElementById('sig-url').value = data.signal_api_url || '';
+    document.getElementById('sig-sender').value = data.signal_sender || '';
+    document.getElementById('sig-recipient').value = data.signal_recipient || '';
+    document.getElementById('sig-daily-time').value = data.signal_daily_time || '09:00';
+    document.getElementById('sig-enabled').checked = data.signal_enabled === 'true';
+    const badge = document.getElementById('signal-status-badge');
+    if (data.signal_configured) {
+      badge.innerHTML = '<span class="badge" style="background:var(--green-bg);color:var(--green)">Connected</span>';
+    } else {
+      badge.innerHTML = '<span class="badge" style="background:var(--surface3);color:var(--text2)">Not configured</span>';
+    }
+    loadSignalLog();
+  } catch(e) {
+    console.error('Failed to load signal settings', e);
+  }
+}
+
+async function saveSignalSettings() {
+  const errEl = document.getElementById('signal-settings-error');
+  errEl.innerHTML = '';
+  try {
+    await api('/signal/settings', {
+      method: 'POST',
+      body: JSON.stringify({
+        signal_api_url:   document.getElementById('sig-url').value.trim(),
+        signal_sender:    document.getElementById('sig-sender').value.trim(),
+        signal_recipient: document.getElementById('sig-recipient').value.trim(),
+        signal_daily_time: document.getElementById('sig-daily-time').value,
+        signal_enabled:   document.getElementById('sig-enabled').checked ? 'true' : 'false'
+      })
+    });
+    toast('Signal settings saved!');
+    loadSignalSettings();
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function testSignal() {
+  const errEl = document.getElementById('signal-settings-error');
+  errEl.innerHTML = '';
+  try {
+    const data = await api('/signal/test', { method: 'POST' });
+    toast(data.message);
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function loadSignalLog() {
+  const el = document.getElementById('signal-log-list');
+  if (!el) return;
+  try {
+    const rows = await api('/signal/log');
+    if (!rows.length) { el.textContent = 'No messages sent yet.'; return; }
+    const typeLabels = { event_created: '📅 Announcement', daily_summary: '📋 Daily summary', all_available: '🎉 All available' };
+    el.innerHTML = rows.slice(0, 10).map(r => `
+      <div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="color:${r.success?'var(--green)':'var(--red)'}">●</span>
+        <span style="flex:1">${typeLabels[r.message_type] || r.message_type}${r.event_title ? ' · ' + esc(r.event_title) : ''}${r.date ? ' · ' + r.date : ''}</span>
+        <span style="color:var(--text3);font-size:11px">${new Date(r.sent_at).toLocaleString()}</span>
+        ${r.error ? `<span style="color:var(--red);font-size:11px" title="${esc(r.error)}">⚠ error</span>` : ''}
+      </div>`).join('');
+  } catch(e) {
+    el.textContent = 'Could not load log.';
+  }
+}
+
+async function sendSignalAnnouncement(eventId) {
+  try {
+    const data = await api(`/signal/send/announcement/${eventId}`, { method: 'POST' });
+    toast(data.message);
+  } catch(e) {
+    toast('Signal error: ' + e.message);
+  }
+}
+
+async function sendSignalSummary(eventId) {
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    const data = await api(`/signal/send/summary/${eventId}`, {
+      method: 'POST',
+      body: JSON.stringify({ date: today })
+    });
+    toast(data.message);
+  } catch(e) {
+    toast('Signal error: ' + e.message);
   }
 }
 

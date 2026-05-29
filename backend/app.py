@@ -6,6 +6,7 @@ from routes.events import events_bp
 from routes.availability import availability_bp
 from routes.admin import admin_bp
 from routes.discord import discord_bp, start_scheduler
+from routes.signal import signal_bp, start_signal_scheduler
 import os
 
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -16,13 +17,15 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 init_db(app)
 
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(events_bp, url_prefix='/api/events')
-app.register_blueprint(availability_bp, url_prefix='/api/availability')
-app.register_blueprint(admin_bp, url_prefix='/api/admin')
-app.register_blueprint(discord_bp, url_prefix='/api/discord')
+app.register_blueprint(auth_bp,          url_prefix='/api/auth')
+app.register_blueprint(events_bp,        url_prefix='/api/events')
+app.register_blueprint(availability_bp,  url_prefix='/api/availability')
+app.register_blueprint(admin_bp,         url_prefix='/api/admin')
+app.register_blueprint(discord_bp,       url_prefix='/api/discord')
+app.register_blueprint(signal_bp,        url_prefix='/api/signal')
 
 start_scheduler(app)
+start_signal_scheduler(app)
 
 @app.route('/api/health')
 def health():
