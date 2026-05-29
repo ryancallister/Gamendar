@@ -209,7 +209,7 @@
   .user-row-label {
     background: var(--surface2); display: flex; align-items: center; gap: 8px;
     padding: 10px 14px; border-right: 1px solid var(--border2) !important;
-    height: 56px; box-sizing: border-box;
+    min-height: 56px; box-sizing: border-box;
   }
   .user-row-label .mini-avatar {
     width: 26px; height: 26px; border-radius: 50%; background: var(--accent2);
@@ -219,7 +219,7 @@
 
   .avail-cell {
     display: flex; align-items: center; justify-content: center;
-    transition: background 0.1s; height: 56px; padding: 6px; box-sizing: border-box;
+    transition: background 0.1s; min-height: 56px; padding: 6px; box-sizing: border-box;
   }
   /* weekends are fully interactive */
 
@@ -263,6 +263,22 @@
   .avail-select option.opt-available { color: #3ecf8e; }
   .avail-select option.opt-unavailable { color: #f06b6b; }
   .avail-select option.opt-maybe { color: #f5a623; }
+
+  .avail-cell-inner { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+  .avail-note-input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 3px 6px; color: var(--text2); font-family: var(--font);
+    font-size: 11px; outline: none; transition: border-color 0.15s;
+    resize: none; height: 26px; line-height: 1.4;
+  }
+  .avail-note-input:focus { border-color: var(--accent); color: var(--text); }
+  .avail-note-input::placeholder { color: var(--text3); }
+  .avail-note-text {
+    font-size: 10px; color: var(--text2); font-style: italic;
+    line-height: 1.3; text-align: center; padding: 0 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 100%;
+  }
 
   .corner-cell { background: var(--surface2); }
 
@@ -379,8 +395,8 @@
     .user-row-label { padding: 6px 8px; gap: 5px; }
     .user-row-label .uname { font-size: 11px; }
     .user-row-label .mini-avatar { width: 20px; height: 20px; font-size: 9px; }
-    .avail-cell { height: 48px; padding: 4px; }
-    .user-row-label { height: 48px; }
+    .avail-cell { min-height: 48px; padding: 4px; }
+    .user-row-label { min-height: 48px; }
     .avail-select { font-size: 10px; padding: 3px 2px; height: 28px; }
     .avail-pill-label { font-size: 10px; height: 28px; padding: 3px 2px; }
     .summary-cell { padding: 6px 4px; }
@@ -692,11 +708,12 @@ function renderWeekGrid(data) {
     days.push(d);
   }
 
-  // Index availability: user_id -> date -> {status}
+  // Index availability: user_id -> date -> status, date_note -> note
   const avMap = {};
   for (const a of availability) {
     if (!avMap[a.user_id]) avMap[a.user_id] = {};
     avMap[a.user_id][a.date] = a.status;
+    if (a.note) avMap[a.user_id][a.date + '_note'] = a.note;
   }
 
   const today = new Date().toISOString().slice(0,10);
@@ -730,19 +747,30 @@ function renderWeekGrid(data) {
       const status = (avMap[user.id]||{})[iso] || '';
       const pillClass = status || 'empty';
       const symbol = statusEmoji[status] || '·';
+      const myNote = ((avMap[user.id] || {})[iso + '_note']) || '';
       if (isMine) {
         html += `<div class="week-grid-cell avail-cell" data-user="${user.id}" data-date="${iso}">
-          <select class="avail-select ${pillClass}" onchange="setAvailability(this, ${currentEventId}, '${iso}')">
-            <option value="" ${status===''?'selected':''} class="opt-empty">— No response</option>
-            <option value="available" ${status==='available'?'selected':''} class="opt-available">✓ Available</option>
-            <option value="unavailable" ${status==='unavailable'?'selected':''} class="opt-unavailable">✗ Unavailable</option>
-            <option value="maybe" ${status==='maybe'?'selected':''} class="opt-maybe">~ Maybe</option>
-          </select>
+          <div class="avail-cell-inner">
+            <select class="avail-select ${pillClass}" onchange="setAvailability(this, ${currentEventId}, '${iso}')">
+              <option value="" ${status===''?'selected':''} class="opt-empty">— No response</option>
+              <option value="available" ${status==='available'?'selected':''} class="opt-available">✓ Available</option>
+              <option value="unavailable" ${status==='unavailable'?'selected':''} class="opt-unavailable">✗ Unavailable</option>
+              <option value="maybe" ${status==='maybe'?'selected':''} class="opt-maybe">~ Maybe</option>
+            </select>
+            <input type="text" class="avail-note-input" placeholder="Add a note…" maxlength="60"
+              value="${esc(myNote)}"
+              onchange="saveNote(this, ${currentEventId}, '${iso}')"
+              onkeydown="if(event.key==='Enter'){this.blur();}">
+          </div>
         </div>`;
       } else {
         const pillLabel = { available: '✓ Available', unavailable: '✗ Unavailable', maybe: '~ Maybe', '': '—' };
+        const otherNote = ((avMap[user.id] || {})[iso + '_note']) || '';
         html += `<div class="week-grid-cell avail-cell">
-          <div class="avail-pill-label ${pillClass}">${pillLabel[status] || '—'}</div>
+          <div class="avail-cell-inner" style="align-items:center">
+            <div class="avail-pill-label ${pillClass}">${pillLabel[status] || '—'}</div>
+            ${otherNote ? `<div class="avail-note-text" title="${esc(otherNote)}">${esc(otherNote)}</div>` : ''}
+          </div>
         </div>`;
       }
     }
@@ -793,6 +821,25 @@ async function setAvailability(selectEl, eventId, date) {
     // Revert value
     selectEl.value = prev.replace('avail-select ', '').replace('avail-select', '').trim();
     toast('Failed to save: ' + e.message);
+  }
+}
+
+async function saveNote(inputEl, eventId, date) {
+  const note = inputEl.value.trim();
+  // Find the sibling select to get current status
+  const select = inputEl.closest('.avail-cell-inner').querySelector('.avail-select');
+  const status = select ? select.value : '';
+  if (!status) return; // Don't save a note with no status set
+  try {
+    await api(`/availability/event/${eventId}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ date, status: status || 'available', note })
+    });
+    // Update liveAvailability note mirror
+    if (!liveAvailability[date]) liveAvailability[date] = {};
+    liveAvailability[date][currentUser.id + '_note'] = note;
+  } catch(e) {
+    toast('Failed to save note: ' + e.message);
   }
 }
 
