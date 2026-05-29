@@ -805,6 +805,14 @@ function renderWeekGrid(data) {
     days.push(d);
   }
 
+  // Index availability: user_id -> date -> status, date_note -> note
+  const avMap = {};
+  for (const a of availability) {
+    if (!avMap[a.user_id]) avMap[a.user_id] = {};
+    avMap[a.user_id][a.date] = a.status;
+    if (a.note) avMap[a.user_id][a.date + '_note'] = a.note;
+  }
+
   // Pre-build allNotes so noteIdx is available during grid render
   const allNotes = [];
   for (const user of users) {
@@ -814,14 +822,6 @@ function renderWeekGrid(data) {
       const status = ((avMap[user.id] || {})[iso]) || '';
       if (note) allNotes.push({ username: user.username, date: iso, note, status });
     }
-  }
-
-  // Index availability: user_id -> date -> status, date_note -> note
-  const avMap = {};
-  for (const a of availability) {
-    if (!avMap[a.user_id]) avMap[a.user_id] = {};
-    avMap[a.user_id][a.date] = a.status;
-    if (a.note) avMap[a.user_id][a.date + '_note'] = a.note;
   }
 
   const today = new Date().toISOString().slice(0,10);
