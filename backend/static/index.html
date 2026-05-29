@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gamendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1f2436;
+    --surface3: #262d42;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #eef0f6;
+    --text2: #8b93aa;
+    --text3: #545d77;
+    --accent: #6c8ef5;
+    --accent2: #3d5bd4;
+    --accent-glow: rgba(108,142,245,0.15);
+    --green: #3ecf8e;
+    --green-bg: rgba(62,207,142,0.12);
+    --red: #f06b6b;
+    --red-bg: rgba(240,107,107,0.12);
+    --amber: #f5a623;
+    --amber-bg: rgba(245,166,35,0.12);
+    --radius: 10px;
+    --radius-lg: 16px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* AUTH */
+  #auth-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(108,142,245,0.08) 0%, transparent 70%);
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+  }
+
+  .auth-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .auth-logo .icon {
+    width: 38px; height: 38px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+
+  .auth-logo h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+  .auth-logo span { font-size: 13px; color: var(--text2); display: block; }
+
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+  .form-group input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: var(--font); font-size: 15px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .form-group input:focus { border-color: var(--accent); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: var(--font); font-size: 15px; font-weight: 500; transition: all 0.15s;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; width: 100%; padding: 11px; }
+  .btn-primary:hover { background: #7a9cf6; }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(240,107,107,0.2); }
+  .btn-danger:hover { background: rgba(240,107,107,0.2); }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error-msg { background: var(--red-bg); color: var(--red); border: 1px solid rgba(240,107,107,0.2); padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 1rem; }
+  .success-msg { background: var(--green-bg); color: var(--green); border: 1px solid rgba(62,207,142,0.2); padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 1rem; }
+
+  /* APP LAYOUT */
+  #app-screen { display: none; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1rem;
+    display: flex; align-items: center; gap: 0.5rem; height: 52px;
+  }
+
+  .topbar-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; letter-spacing: -0.3px; }
+  .topbar-logo .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+
+  .topbar-nav { display: flex; gap: 2px; margin-left: 1rem; }
+  .nav-btn {
+    padding: 6px 14px; border-radius: 7px; border: none; background: none; cursor: pointer;
+    font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--text2); transition: all 0.15s;
+  }
+  .nav-btn:hover { background: var(--surface2); color: var(--text); }
+  .nav-btn.active { background: var(--surface2); color: var(--text); }
+
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .user-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px;
+    font-size: 14px;
+  }
+  .user-chip .avatar {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--accent2);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;
+    color: #fff;
+  }
+  .badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    background: var(--accent-glow); color: var(--accent); letter-spacing: 0.4px; text-transform: uppercase;
+  }
+
+  /* MAIN CONTENT */
+  .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+  .page-header h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.4px; }
+  .page-header p { color: var(--text2); font-size: 14px; margin-top: 3px; }
+
+  /* EVENTS LIST */
+  .events-grid { display: grid; gap: 12px; }
+
+  .event-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 1rem;
+  }
+  .event-card:hover { border-color: var(--border2); background: var(--surface2); }
+
+  .event-card .week-badge {
+    background: var(--accent-glow); color: var(--accent); border-radius: 8px;
+    padding: 8px 14px; text-align: center; min-width: 80px; flex-shrink: 0;
+  }
+  .event-card .week-badge .month { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
+  .event-card .week-badge .days { font-size: 18px; font-weight: 600; font-family: var(--mono); }
+
+  .event-card .event-info { flex: 1; }
+  .event-card .event-title { font-weight: 600; font-size: 16px; }
+  .event-card .event-meta { color: var(--text2); font-size: 13px; margin-top: 3px; }
+
+  .event-card .event-stats { display: flex; gap: 12px; flex-shrink: 0; }
+  .stat-pill {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 13px; padding: 4px 10px; border-radius: 20px;
+  }
+  .stat-pill.green { background: var(--green-bg); color: var(--green); }
+  .stat-pill.red { background: var(--red-bg); color: var(--red); }
+  .stat-pill.amber { background: var(--amber-bg); color: var(--amber); }
+
+  /* WEEKLY CALENDAR VIEW */
+  .week-grid {
+    display: grid;
+    grid-template-columns: 140px repeat(7, 1fr);
+    border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+    background: var(--surface);
+  }
+
+  .week-grid-cell {
+    padding: 12px 10px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    font-size: 13px; overflow: hidden;
+  }
+  .week-grid-cell:nth-child(8n) { border-right: none; }
+
+  .day-header {
+    background: var(--surface2); text-align: center; font-weight: 600; font-size: 13px;
+  }
+  .day-header .day-name { color: var(--text2); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; }
+  .day-header .day-num { font-size: 18px; font-weight: 600; font-family: var(--mono); margin-top: 2px; }
+  .day-header.today .day-num { color: var(--accent); }
+  /* weekend headers not dimmed */
+
+  .user-row-label {
+    background: var(--surface2); display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-right: 1px solid var(--border2) !important;
+    min-height: 56px; box-sizing: border-box;
+  }
+  .user-row-label .mini-avatar {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--accent2);
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .user-row-label .uname { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .avail-cell {
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s; min-height: 56px; padding: 6px; box-sizing: border-box;
+  }
+  /* weekends are fully interactive */
+
+  .avail-pill {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .avail-pill.available { background: var(--green-bg); color: var(--green); }
+  .avail-pill.unavailable { background: var(--red-bg); color: var(--red); }
+  .avail-pill.maybe { background: var(--amber-bg); color: var(--amber); }
+  .avail-pill.empty { background: var(--surface3); color: var(--text3); }
+
+  .avail-pill-label {
+    width: 100%; border-radius: 7px; padding: 0;
+    font-size: 12px; font-family: var(--font); text-align: center;
+    background: transparent; color: var(--text3);
+    display: flex; align-items: center; justify-content: center;
+    height: 32px; min-height: 32px; max-height: 32px; flex-shrink: 0;
+  }
+  .avail-pill-label.empty {
+    background: var(--surface3); border-radius: 7px;
+  }
+  .avail-pill-label.available { background: var(--green-bg); color: var(--green); }
+  .avail-pill-label.unavailable { background: var(--red-bg); color: var(--red); }
+  .avail-pill-label.maybe { background: var(--amber-bg); color: var(--amber); }
+  .avail-pill-label.empty { background: var(--surface3); color: var(--text3); }
+
+  .avail-select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 7px; padding: 5px 6px; font-family: var(--font);
+    font-size: 12px; outline: none; cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s;
+    text-align: center; height: 32px; box-sizing: border-box;
+  }
+  .avail-select:focus { border-color: var(--accent); }
+  .avail-select.available { background: var(--green-bg); color: var(--green); border-color: rgba(62,207,142,0.3); }
+  .avail-select.unavailable { background: var(--red-bg); color: var(--red); border-color: rgba(240,107,107,0.3); }
+  .avail-select.maybe { background: var(--amber-bg); color: var(--amber); border-color: rgba(245,166,35,0.3); }
+  .avail-select.empty { background: var(--bg); color: var(--text2); border-color: var(--border2); }
+  .avail-select option { background: #1a1f2e; color: #eef0f6; }
+  .avail-select option.opt-available { color: #3ecf8e; }
+  .avail-select option.opt-unavailable { color: #f06b6b; }
+  .avail-select option.opt-maybe { color: #f5a623; }
+
+  .avail-cell-inner { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+  .avail-note-input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 3px 6px; color: var(--text2); font-family: var(--font);
+    font-size: 11px; outline: none; transition: border-color 0.15s;
+    resize: none; height: 26px; line-height: 1.4;
+  }
+  .avail-note-input:focus { border-color: var(--accent); color: var(--text); }
+  .avail-note-input::placeholder { color: var(--text3); }
+  .avail-note-text {
+    font-size: 10px; color: var(--text2); font-style: italic;
+    line-height: 1.3; text-align: center; padding: 0 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .corner-cell { background: var(--surface2); }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 16px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-dot.green { background: var(--green); }
+  .legend-dot.red { background: var(--red); }
+  .legend-dot.amber { background: var(--amber); }
+  .legend-dot.gray { background: var(--text3); }
+
+  /* SUMMARY ROW */
+  .summary-row {
+    display: grid;
+    grid-template-columns: 140px repeat(7, 1fr);
+    border-top: 2px solid var(--border2);
+    background: var(--surface);
+  }
+
+  .summary-cell {
+    padding: 10px; text-align: center; font-size: 12px; border-right: 1px solid var(--border);
+  }
+  .summary-cell:last-child { border-right: none; }
+  .summary-cell .count { font-size: 18px; font-weight: 600; font-family: var(--mono); color: var(--green); }
+  .summary-cell .label-s { color: var(--text2); font-size: 11px; }
+  .summary-label { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem;
+  }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg);
+    width: 100%; max-width: 480px; padding: 2rem;
+  }
+  .modal h3 { font-size: 18px; font-weight: 600; margin-bottom: 1.25rem; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 1.5rem; }
+
+  /* ADMIN TABLE */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid var(--border2); }
+  .data-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+
+  .role-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .role-badge.admin { background: var(--accent-glow); color: var(--accent); }
+  .role-badge.user { background: var(--surface3); color: var(--text2); }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-dot.active { background: var(--green); }
+  .status-dot.inactive { background: var(--red); }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+
+  select {
+    background: var(--bg); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 10px 14px; color: var(--text); font-family: var(--font); font-size: 15px; outline: none; width: 100%;
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
+    padding: 10px 20px; border-radius: 100px; font-size: 14px; font-weight: 500;
+    z-index: 999; transition: transform 0.25s ease; white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 4rem 2rem; color: var(--text2); }
+  .empty .icon { font-size: 48px; margin-bottom: 1rem; opacity: 0.3; }
+  .empty h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+  .section-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1rem; }
+
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--text2); font-size: 14px; margin-bottom: 1.25rem; cursor: pointer; border: none; background: none; font-family: var(--font); padding: 0; transition: color 0.15s; }
+  .back-btn:hover { color: var(--text); }
+
+  @media (max-width: 640px) {
+    .topbar { padding: 0 0.75rem; gap: 0.4rem; height: 48px; }
+    .topbar-logo { font-size: 14px; }
+    .topbar-logo .dot { width: 6px; height: 6px; }
+    .topbar-nav { margin-left: 0.4rem; }
+    .nav-btn { padding: 5px 10px; font-size: 13px; }
+    .user-chip { padding: 4px 8px; gap: 5px; }
+    .user-chip span#user-label { display: none; }
+    .user-chip .avatar { width: 22px; height: 22px; font-size: 10px; }
+    .badge { font-size: 10px; padding: 2px 6px; }
+    .btn.btn-ghost.btn-sm { padding: 5px 8px; font-size: 12px; }
+
+    .main { padding: 1rem 0.75rem; }
+    .page-header { margin-bottom: 1.25rem; }
+    .page-header h2 { font-size: 18px; }
+
+    /* Scrollable week grid on mobile */
+    #week-grid-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .week-grid {
+      grid-template-columns: 80px repeat(7, 80px);
+      min-width: 640px;
+      border-radius: 8px;
+    }
+    .summary-row { grid-template-columns: 80px repeat(7, 80px); min-width: 640px; }
+    .week-grid-cell { padding: 6px 4px; }
+    .day-header .day-num { font-size: 15px; }
+    .day-header .day-name { font-size: 10px; }
+    .user-row-label { padding: 6px 8px; gap: 5px; }
+    .user-row-label .uname { font-size: 11px; }
+    .user-row-label .mini-avatar { width: 20px; height: 20px; font-size: 9px; }
+    .avail-cell { min-height: 48px; padding: 4px; }
+    .user-row-label { min-height: 48px; }
+    .avail-select { font-size: 10px; padding: 3px 2px; height: 28px; }
+    .avail-pill-label { font-size: 10px; height: 28px; padding: 3px 2px; }
+    .summary-cell { padding: 6px 4px; }
+    .summary-cell .count { font-size: 14px; }
+    .legend { gap: 10px; }
+    .legend-item { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="icon">📅</div>
+      <div>
+        <h1>Gamendar</h1>
+        <span>Team weekly scheduler</span>
+      </div>
+    </div>
+
+    <div id="auth-error"></div>
+    <div id="login-form">
+      <div class="form-group"><label>Username</label><input type="text" id="login-user" placeholder="your username" autocomplete="username"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary" onclick="doLogin()" id="login-btn">Sign in</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-logo"><div class="dot"></div>Gamendar</div>
+    <nav class="topbar-nav">
+      <button class="nav-btn active" onclick="showPage('events')" id="nav-events">Events</button>
+      <button class="nav-btn" onclick="showPage('admin')" id="nav-admin" style="display:none">Admin</button>
+    </nav>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar"></div>
+        <span id="user-label"></span>
+        <span class="badge" id="user-role-badge"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- EVENTS PAGE -->
+    <div class="page active" id="page-events">
+      <div class="page-header">
+        <div>
+          <h2>Weekly Events</h2>
+          <p>Click an event to view and set your availability</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCreateEvent()" id="create-event-btn" style="display:none">+ New Event</button>
+      </div>
+      <div class="events-grid" id="events-list"><div class="spinner"></div></div>
+    </div>
+
+    <!-- EVENT DETAIL PAGE -->
+    <div class="page" id="page-event-detail">
+      <button class="back-btn" onclick="showPage('events')">← Back to events</button>
+      <div class="page-header">
+        <div>
+          <h2 id="detail-title">Event</h2>
+          <p id="detail-dates" style="color:var(--text2);font-size:14px;margin-top:3px;"></p>
+        </div>
+        <div style="display:flex;gap:8px;" id="detail-admin-btns"></div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot green"></div>Available</div>
+        <div class="legend-item"><div class="legend-dot amber"></div>Maybe</div>
+        <div class="legend-item"><div class="legend-dot red"></div>Unavailable</div>
+        <div class="legend-item"><div class="legend-dot gray"></div>No response</div>
+
+      </div>
+
+      <div id="week-grid-wrap"></div>
+    </div>
+
+    <!-- ADMIN PAGE -->
+    <div class="page" id="page-admin">
+      <div class="page-header">
+        <div><h2>User Management</h2><p>Manage accounts and roles</p></div>
+        <button class="btn btn-primary" onclick="openCreateUser()">+ New User</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th></th></tr></thead>
+          <tbody id="users-tbody"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:2.5rem">
+        <div class="page-header" style="margin-bottom:1.25rem">
+          <div><h2>Discord Integration</h2><p>Post availability updates to a Discord channel</p></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="discord-status-badge"></span>
+            <button class="btn btn-ghost btn-sm" onclick="testDiscord()">Send test</button>
+            <button class="btn btn-primary btn-sm" onclick="saveDiscordSettings()" style="width:auto">Save</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="padding:1.5rem">
+          <div id="discord-settings-error"></div>
+          <div style="display:grid;grid-template-columns:1fr;gap:1rem">
+            <div class="form-group">
+              <label>Webhook URL</label>
+              <input type="password" id="ds-webhook" placeholder="https://discord.com/api/webhooks/…" autocomplete="off" style="font-family:var(--mono);font-size:13px">
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">
+                In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL
+              </div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0">
+            <div class="form-group">
+              <label>Daily summary time <span style="color:var(--text3);font-size:12px">(server local time, 24h)</span></label>
+              <input type="time" id="ds-daily-time" value="09:00">
+            </div>
+            <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end">
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:0">
+                <input type="checkbox" id="ds-enabled" style="width:18px;height:18px;accent-color:var(--accent)">
+                <span>Enable Discord notifications</span>
+              </label>
+            </div>
+          </div>
+          <div style="margin-top:1rem">
+            <p class="section-title" style="margin-bottom:0.5rem">What gets posted automatically</p>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)">
+              <div>📅 <strong style="color:var(--text)">New event</strong> — when an admin creates a new weekly event</div>
+              <div>📋 <strong style="color:var(--text)">Daily summary</strong> — who's available today, posted at the configured time</div>
+              <div>🎉 <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
+            </div>
+          </div>
+          <div style="margin-top:1.5rem">
+            <p class="section-title" style="margin-bottom:0.5rem">Recent log</p>
+            <div id="discord-log-list" style="font-size:13px;color:var(--text2)">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div id="modal-container"></div>
+<div id="toast"></div>
+
+<script>
+const API = '/api';
+let token = localStorage.getItem('avail_token');
+let currentUser = null;
+let currentEventId = null;
+let currentEventData = null;
+let liveAvailability = {}; // date -> { userId -> status }
+
+// ─── API HELPERS ───────────────────────────────────────────────
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API + path, { headers, ...opts });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ─── AUTH ───────────────────────────────────────────────────────
+async function doLogin() {
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  clearAuthError();
+  try {
+    const data = await api('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: document.getElementById('login-user').value, password: document.getElementById('login-pass').value })
+    });
+    token = data.token;
+    localStorage.setItem('avail_token', token);
+    currentUser = data.user;
+    enterApp();
+  } catch(e) {
+    showAuthError(e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+
+function showAuthError(msg) { document.getElementById('auth-error').innerHTML = `<div class="error-msg">${msg}</div>`; }
+function clearAuthError() { document.getElementById('auth-error').innerHTML = ''; }
+
+function doLogout() {
+  token = null; currentUser = null;
+  localStorage.removeItem('avail_token');
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+async function enterApp() {
+  if (!currentUser) {
+    try { currentUser = await api('/auth/me'); } catch(e) { doLogout(); return; }
+  }
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('user-avatar').textContent = currentUser.username[0].toUpperCase();
+  document.getElementById('user-label').textContent = currentUser.username;
+  document.getElementById('user-role-badge').textContent = currentUser.role;
+  if (currentUser.role === 'admin') {
+    document.getElementById('nav-admin').style.display = '';
+    document.getElementById('create-event-btn').style.display = '';
+  }
+  showPage('events');
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────────────
+function showPage(name) {
+  if (name === 'admin' && currentUser?.role !== 'admin') return;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + (name === 'event-detail' ? 'event-detail' : name)).classList.add('active');
+  const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
+  if (navEl) navEl.classList.add('active');
+  if (name === 'events') loadEvents();
+  if (name === 'admin') { loadUsers(); loadDiscordSettings(); }
+}
+
+// ─── EVENTS ─────────────────────────────────────────────────────
+async function loadEvents() {
+  const el = document.getElementById('events-list');
+  el.innerHTML = '<div style="padding:2rem;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const events = await api('/events/');
+    if (!events.length) {
+      el.innerHTML = `<div class="empty"><div class="icon">📅</div><h3>No events yet</h3><p>${currentUser.role==='admin'?'Create your first weekly event above.':'Ask an admin to create an event.'}</p></div>`;
+      return;
+    }
+    el.innerHTML = '';
+    for (const ev of events) {
+      const start = new Date(ev.week_start + 'T00:00:00');
+      const end = new Date(ev.week_end + 'T00:00:00');
+      const card = document.createElement('div');
+      card.className = 'event-card';
+      card.onclick = () => loadEventDetail(ev.id);
+      card.innerHTML = `
+        <div class="week-badge">
+          <div class="month">${start.toLocaleDateString('en-US',{month:'short'})}</div>
+          <div class="days">${start.getDate()}–${end.getDate()}</div>
+        </div>
+        <div class="event-info">
+          <div class="event-title">${esc(ev.title)}</div>
+          <div class="event-meta">${ev.description||'No description'} &nbsp;·&nbsp; Created by ${esc(ev.created_by_username)}</div>
+        </div>
+      `;
+      el.appendChild(card);
+    }
+  } catch(e) {
+    el.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function loadEventDetail(eventId) {
+  currentEventId = eventId;
+  showPage('event-detail');
+  document.getElementById('week-grid-wrap').innerHTML = '<div style="padding:3rem;text-align:center"><div class="spinner"></div></div>';
+  try {
+    const data = await api(`/events/${eventId}`);
+    currentEventData = data;
+    const ev = data.event;
+    document.getElementById('detail-title').textContent = ev.title;
+    const s = new Date(ev.week_start+'T00:00:00'), e = new Date(ev.week_end+'T00:00:00');
+    document.getElementById('detail-dates').textContent = `${fmtDate(s)} – ${fmtDate(e)}`;
+
+    const adminBtns = document.getElementById('detail-admin-btns');
+    if (currentUser.role === 'admin') {
+      adminBtns.innerHTML = `
+        <button class="btn btn-ghost btn-sm" onclick="sendDiscordAnnouncement(${ev.id})" title="Re-send event announcement to Discord">📣 Announce</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendDiscordSummary(${ev.id})" title="Send today's availability summary to Discord">📋 Summary</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditEvent(${ev.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Delete</button>`;
+    } else { adminBtns.innerHTML = ''; }
+
+    renderWeekGrid(data);
+  } catch(e) {
+    document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+function renderWeekGrid(data) {
+  const ev = data.event;
+  const users = data.users;
+  const availability = data.availability;
+
+  // Build live mirror of availability state for accurate summary recounts
+  liveAvailability = {};
+  for (const a of availability) {
+    if (!liveAvailability[a.date]) liveAvailability[a.date] = {};
+    liveAvailability[a.date][a.user_id] = a.status;
+  }
+
+  // Build day list for the week (Mon–Sun from week_start)
+  const days = [];
+  const start = new Date(ev.week_start + 'T00:00:00');
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    days.push(d);
+  }
+
+  // Index availability: user_id -> date -> status, date_note -> note
+  const avMap = {};
+  for (const a of availability) {
+    if (!avMap[a.user_id]) avMap[a.user_id] = {};
+    avMap[a.user_id][a.date] = a.status;
+    if (a.note) avMap[a.user_id][a.date + '_note'] = a.note;
+  }
+
+  const today = new Date().toISOString().slice(0,10);
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const statusEmoji = { available: '✓', unavailable: '✗', maybe: '~', '': '' };
+  const statusOrder = ['available', 'unavailable', 'maybe', ''];
+  const nextStatus = { 'available': 'unavailable', 'unavailable': 'maybe', 'maybe': '', '': 'available' };
+
+  let html = `<div class="week-grid">`;
+  // Header row
+  html += `<div class="week-grid-cell corner-cell day-header"></div>`;
+  for (const d of days) {
+    const iso = d.toISOString().slice(0,10);
+    const isWknd = d.getDay()===0||d.getDay()===6;
+    html += `<div class="week-grid-cell day-header${iso===today?' today':''}${isWknd?' weekend':''}" data-iso="${iso}">
+      <div class="day-name">${dayNames[d.getDay()]}</div>
+      <div class="day-num">${d.getDate()}</div>
+    </div>`;
+  }
+
+  // User rows
+  for (const user of users) {
+    const isMine = user.id === currentUser.id;
+    html += `<div class="week-grid-cell user-row-label">
+      <div class="mini-avatar">${user.username[0].toUpperCase()}</div>
+      <div class="uname">${esc(user.username)}</div>
+    </div>`;
+    for (const d of days) {
+      const iso = d.toISOString().slice(0,10);
+      const isWknd = d.getDay()===0||d.getDay()===6;
+      const status = (avMap[user.id]||{})[iso] || '';
+      const pillClass = status || 'empty';
+      const symbol = statusEmoji[status] || '·';
+      const myNote = ((avMap[user.id] || {})[iso + '_note']) || '';
+      if (isMine) {
+        html += `<div class="week-grid-cell avail-cell" data-user="${user.id}" data-date="${iso}">
+          <div class="avail-cell-inner">
+            <select class="avail-select ${pillClass}" onchange="setAvailability(this, ${currentEventId}, '${iso}')">
+              <option value="" ${status===''?'selected':''} class="opt-empty">— No response</option>
+              <option value="available" ${status==='available'?'selected':''} class="opt-available">✓ Available</option>
+              <option value="unavailable" ${status==='unavailable'?'selected':''} class="opt-unavailable">✗ Unavailable</option>
+              <option value="maybe" ${status==='maybe'?'selected':''} class="opt-maybe">~ Maybe</option>
+            </select>
+            <input type="text" class="avail-note-input" placeholder="Add a note…" maxlength="60"
+              value="${esc(myNote)}"
+              onchange="saveNote(this, ${currentEventId}, '${iso}')"
+              onkeydown="if(event.key==='Enter'){this.blur();}">
+          </div>
+        </div>`;
+      } else {
+        const pillLabel = { available: '✓ Available', unavailable: '✗ Unavailable', maybe: '~ Maybe', '': '—' };
+        const otherNote = ((avMap[user.id] || {})[iso + '_note']) || '';
+        html += `<div class="week-grid-cell avail-cell">
+          <div class="avail-cell-inner" style="align-items:center">
+            <div class="avail-pill-label ${pillClass}">${pillLabel[status] || '—'}</div>
+            ${otherNote ? `<div class="avail-note-text" title="${esc(otherNote)}">${esc(otherNote)}</div>` : ''}
+          </div>
+        </div>`;
+      }
+    }
+  }
+  html += `</div>`;
+
+  // Summary row
+  html += `<div class="summary-row">
+    <div class="summary-cell summary-label">Available</div>`;
+  for (const d of days) {
+    const iso = d.toISOString().slice(0,10);
+    const count = users.filter(u => (avMap[u.id]||{})[iso] === 'available').length;
+    const total = users.filter(u => (avMap[u.id]||{})[iso]).length;
+    html += `<div class="summary-cell">
+      <div class="count">${count}</div>
+      <div class="label-s">of ${users.length}</div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  document.getElementById('week-grid-wrap').innerHTML = html;
+  // Scroll hint on mobile: auto-scroll to show today's column if possible
+  const wrap = document.getElementById('week-grid-wrap');
+  const todayHeader = wrap.querySelector('.day-header.today');
+  if (todayHeader && wrap.scrollWidth > wrap.clientWidth) {
+    todayHeader.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+}
+
+async function setAvailability(selectEl, eventId, date) {
+  const newStatus = selectEl.value;
+  const prev = selectEl.className;
+
+  // Update select colour immediately
+  selectEl.className = `avail-select ${newStatus || 'empty'}`;
+
+  try {
+    await api(`/availability/event/${eventId}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ date, status: newStatus || 'available' })
+    });
+    // Update live mirror
+    if (!liveAvailability[date]) liveAvailability[date] = {};
+    liveAvailability[date][currentUser.id] = newStatus || 'available';
+    updateSummaryRow();
+  } catch(e) {
+    selectEl.className = prev;
+    // Revert value
+    selectEl.value = prev.replace('avail-select ', '').replace('avail-select', '').trim();
+    toast('Failed to save: ' + e.message);
+  }
+}
+
+async function saveNote(inputEl, eventId, date) {
+  const note = inputEl.value.trim();
+  // Find the sibling select to get current status
+  const select = inputEl.closest('.avail-cell-inner').querySelector('.avail-select');
+  const status = select ? select.value : '';
+  if (!status) return; // Don't save a note with no status set
+  try {
+    await api(`/availability/event/${eventId}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ date, status: status || 'available', note })
+    });
+    // Update liveAvailability note mirror
+    if (!liveAvailability[date]) liveAvailability[date] = {};
+    liveAvailability[date][currentUser.id + '_note'] = note;
+  } catch(e) {
+    toast('Failed to save note: ' + e.message);
+  }
+}
+
+function updateSummaryRow() {
+  // Count available per date from the live mirror (all users, always accurate)
+  const grid = document.querySelector('.week-grid');
+  if (!grid) return;
+  const users = currentEventData?.users || [];
+  const dayHeaders = [...grid.querySelectorAll('.day-header[data-iso]')];
+  const summaries = [...document.querySelectorAll('.summary-cell:not(.summary-label)')];
+  dayHeaders.forEach((hdr, i) => {
+    const iso = hdr.dataset.iso;
+    const count = users.filter(u => (liveAvailability[iso] || {})[u.id] === 'available').length;
+    if (summaries[i]) summaries[i].querySelector('.count').textContent = count;
+  });
+}
+
+// ─── CREATE/EDIT EVENT MODAL ─────────────────────────────────────
+function openCreateEvent() {
+  showModal(`
+    <h3>New weekly event</h3>
+    <div id="modal-error"></div>
+    <div class="form-group"><label>Title</label><input type="text" id="m-title" placeholder="e.g. Sprint Week 12"></div>
+    <div class="form-group"><label>Description</label><input type="text" id="m-desc" placeholder="Optional description"></div>
+    <div class="form-group"><label>Week start (Monday)</label><input type="date" id="m-start"></div>
+    <div class="form-group"><label>Week end (Sunday)</label><input type="date" id="m-end"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="submitCreateEvent()">Create event</button>
+    </div>
+  `);
+  // Default to current week
+  const now = new Date();
+  const day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (day===0?6:day-1));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  document.getElementById('m-start').value = mon.toISOString().slice(0,10);
+  document.getElementById('m-end').value = sun.toISOString().slice(0,10);
+}
+
+async function submitCreateEvent() {
+  const title = document.getElementById('m-title').value.trim();
+  const desc = document.getElementById('m-desc').value.trim();
+  const start = document.getElementById('m-start').value;
+  const end = document.getElementById('m-end').value;
+  if (!title || !start || !end) { document.getElementById('modal-error').innerHTML = '<div class="error-msg">All fields required</div>'; return; }
+  try {
+    await api('/events/', { method:'POST', body: JSON.stringify({ title, description: desc, week_start: start, week_end: end }) });
+    closeModal(); toast('Event created!'); loadEvents();
+  } catch(e) {
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+function openEditEvent(id) {
+  const ev = currentEventData?.event;
+  if (!ev) return;
+  showModal(`
+    <h3>Edit event</h3>
+    <div id="modal-error"></div>
+    <div class="form-group"><label>Title</label><input type="text" id="m-title" value="${esc(ev.title)}"></div>
+    <div class="form-group"><label>Description</label><input type="text" id="m-desc" value="${esc(ev.description||'')}"></div>
+    <div class="form-group"><label>Week start</label><input type="date" id="m-start" value="${ev.week_start}"></div>
+    <div class="form-group"><label>Week end</label><input type="date" id="m-end" value="${ev.week_end}"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="submitEditEvent(${id})">Save changes</button>
+    </div>
+  `);
+}
+
+async function submitEditEvent(id) {
+  try {
+    await api(`/events/${id}`, { method:'PUT', body: JSON.stringify({
+      title: document.getElementById('m-title').value,
+      description: document.getElementById('m-desc').value,
+      week_start: document.getElementById('m-start').value,
+      week_end: document.getElementById('m-end').value
+    })});
+    closeModal(); toast('Event updated!'); loadEventDetail(id);
+  } catch(e) {
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event and all availability data?')) return;
+  try {
+    await api(`/events/${id}`, { method:'DELETE' });
+    toast('Event deleted'); showPage('events');
+  } catch(e) { toast(e.message); }
+}
+
+
+// ─── DISCORD ─────────────────────────────────────────────────────
+async function loadDiscordSettings() {
+  try {
+    const data = await api('/discord/settings');
+    // Show masked URL if already set, otherwise blank for new entry
+    document.getElementById('ds-webhook').value = data.discord_webhook_url || '';
+    document.getElementById('ds-webhook').placeholder = data.discord_webhook_set
+      ? 'Webhook URL set — paste a new one to replace'
+      : 'https://discord.com/api/webhooks/…';
+    document.getElementById('ds-daily-time').value = data.discord_daily_time || '09:00';
+    document.getElementById('ds-enabled').checked = data.discord_enabled === 'true';
+    const badge = document.getElementById('discord-status-badge');
+    if (data.discord_configured) {
+      badge.innerHTML = '<span class="badge" style="background:var(--green-bg);color:var(--green)">Connected</span>';
+    } else {
+      badge.innerHTML = '<span class="badge" style="background:var(--surface3);color:var(--text2)">Not configured</span>';
+    }
+    loadDiscordLog();
+  } catch(e) {
+    console.error('Failed to load discord settings', e);
+  }
+}
+
+async function saveDiscordSettings() {
+  const errEl = document.getElementById('discord-settings-error');
+  errEl.innerHTML = '';
+  try {
+    await api('/discord/settings', {
+      method: 'POST',
+      body: JSON.stringify({
+        discord_webhook_url: document.getElementById('ds-webhook').value,
+        discord_daily_time: document.getElementById('ds-daily-time').value,
+        discord_enabled: document.getElementById('ds-enabled').checked ? 'true' : 'false'
+      })
+    });
+    toast('Discord settings saved!');
+    loadDiscordSettings();
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function testDiscord() {
+  const errEl = document.getElementById('discord-settings-error');
+  errEl.innerHTML = '';
+  try {
+    const data = await api('/discord/test', { method: 'POST' });
+    toast(data.message);
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function loadDiscordLog() {
+  const el = document.getElementById('discord-log-list');
+  if (!el) return;
+  try {
+    const rows = await api('/discord/log');
+    if (!rows.length) { el.textContent = 'No messages sent yet.'; return; }
+    const typeLabels = { event_created: '📅 Announcement', daily_summary: '📋 Daily summary', all_available: '🎉 All available' };
+    el.innerHTML = rows.slice(0, 10).map(r => `
+      <div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="color:${r.success?'var(--green)':'var(--red)'}">●</span>
+        <span style="flex:1">${typeLabels[r.message_type] || r.message_type}${r.event_title ? ' · ' + esc(r.event_title) : ''}${r.date ? ' · ' + r.date : ''}</span>
+        <span style="color:var(--text3);font-size:11px">${new Date(r.sent_at).toLocaleString()}</span>
+        ${r.error ? `<span style="color:var(--red);font-size:11px" title="${esc(r.error)}">⚠ error</span>` : ''}
+      </div>`).join('');
+  } catch(e) {
+    el.textContent = 'Could not load log.';
+  }
+}
+
+async function sendDiscordAnnouncement(eventId) {
+  try {
+    const data = await api(`/discord/send/announcement/${eventId}`, { method: 'POST' });
+    toast(data.message);
+  } catch(e) {
+    toast('Discord error: ' + e.message);
+  }
+}
+
+async function sendDiscordSummary(eventId) {
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    const data = await api(`/discord/send/summary/${eventId}`, {
+      method: 'POST',
+      body: JSON.stringify({ date: today })
+    });
+    toast(data.message);
+  } catch(e) {
+    toast('Discord error: ' + e.message);
+  }
+}
+
+// ─── ADMIN: USERS ────────────────────────────────────────────────
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:2rem;text-align:center"><div class="spinner"></div></td></tr>';
+  try {
+    const users = await api('/admin/users');
+    tbody.innerHTML = '';
+    for (const u of users) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${esc(u.username)}</strong></td>
+        <td style="color:var(--text2)">${esc(u.email)}</td>
+        <td><span class="role-badge ${u.role}">${u.role}</span></td>
+        <td><span class="status-dot ${u.is_active?'active':'inactive'}"></span>${u.is_active?'Active':'Inactive'}</td>
+        <td style="color:var(--text2);font-size:13px">${new Date(u.created_at).toLocaleDateString()}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="openEditUser(${u.id},'${esc(u.username)}','${esc(u.email)}','${u.role}',${u.is_active})">Edit</button>
+          ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">Delete</button>`:''}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="error-msg">${e.message}</div></td></tr>`;
+  }
+}
+
+function openCreateUser() {
+  showModal(`
+    <h3>Create user</h3>
+    <div id="modal-error"></div>
+    <div class="form-group"><label>Username</label><input type="text" id="m-uname"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="m-email"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="m-pass"></div>
+    <div class="form-group"><label>Role</label><select id="m-role"><option value="user">User</option><option value="admin">Admin</option></select></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="submitCreateUser()">Create</button>
+    </div>
+  `);
+}
+
+async function submitCreateUser() {
+  try {
+    await api('/admin/users', { method:'POST', body: JSON.stringify({
+      username: document.getElementById('m-uname').value,
+      email: document.getElementById('m-email').value,
+      password: document.getElementById('m-pass').value,
+      role: document.getElementById('m-role').value
+    })});
+    closeModal(); toast('User created!'); loadUsers();
+  } catch(e) {
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+function openEditUser(id, username, email, role, isActive) {
+  showModal(`
+    <h3>Edit ${username}</h3>
+    <div id="modal-error"></div>
+    <div class="form-group"><label>Role</label>
+      <select id="m-role"><option value="user"${role==='user'?' selected':''}>User</option><option value="admin"${role==='admin'?' selected':''}>Admin</option></select>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="m-active"><option value="1"${isActive?' selected':''}>Active</option><option value="0"${!isActive?' selected':''}>Inactive</option></select>
+    </div>
+    <div class="form-group"><label>New password <span style="color:var(--text3)">(leave blank to keep)</span></label><input type="password" id="m-pass" placeholder="min 6 characters"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="submitEditUser(${id})">Save</button>
+    </div>
+  `);
+}
+
+async function submitEditUser(id) {
+  const body = {
+    role: document.getElementById('m-role').value,
+    is_active: parseInt(document.getElementById('m-active').value)
+  };
+  const pass = document.getElementById('m-pass').value;
+  if (pass) body.password = pass;
+  try {
+    await api(`/admin/users/${id}`, { method:'PUT', body: JSON.stringify(body) });
+    closeModal(); toast('User updated!'); loadUsers();
+  } catch(e) {
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function deleteUser(id) {
+  if (!confirm('Delete this user? This cannot be undone.')) return;
+  try {
+    await api(`/admin/users/${id}`, { method:'DELETE' });
+    toast('User deleted'); loadUsers();
+  } catch(e) { toast(e.message); }
+}
+
+// ─── MODAL & TOAST HELPERS ───────────────────────────────────────
+function showModal(html) {
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal">${html}</div>
+    </div>`;
+}
+function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d) { return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
+
+// ─── BOOT ────────────────────────────────────────────────────────
+if (token) {
+  enterApp();
+} else {
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+</script>
+</body>
+</html>

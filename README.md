@@ -78,26 +78,19 @@ nano .env   # set SECRET_KEY and APP_PORT
 
 ### Option B — Manual Docker run (no Compose plugin needed)
 
+Single container — no separate frontend image needed.
+
 ```bash
-# Create the data directory on your array
 mkdir -p /mnt/user/appdata/gamendar/data
 
-# Run backend
 docker run -d \
-  --name availability-backend \
+  --name gamendar \
   --restart unless-stopped \
   -e SECRET_KEY=your-secret-key-here \
   -e DATABASE_PATH=/data/calendar.db \
+  -p 3005:5000 \
   -v /mnt/user/appdata/gamendar/data:/data \
-  ghcr.io/YOUR_USERNAME/gamendar-backend:latest
-
-# Run frontend (includes nginx reverse proxy)
-docker run -d \
-  --name availability-frontend \
-  --restart unless-stopped \
-  -p 8080:80 \
-  --link availability-backend:backend \
-  ghcr.io/YOUR_USERNAME/gamendar-frontend:latest
+  ghcr.io/YOUR_USERNAME/gamendar:latest
 ```
 
 ### Unraid port & data path tips
