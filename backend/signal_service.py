@@ -109,12 +109,19 @@ def build_all_available(event, users, summary_date):
 def notify_event_created(db, event):
     if not signal_configured(db):
         return
-    api_url   = get_setting(db, 'signal_api_url')
-    sender    = get_setting(db, 'signal_sender')
-    recipient = get_setting(db, 'signal_recipient')
-    message   = build_event_announcement(event)
-    success, error = send_signal_message(api_url, sender, recipient, message)
-    log_signal(db, 'event_created', success, event_id=event['id'], error=error)
+    try:
+        api_url   = get_setting(db, 'signal_api_url')
+        sender    = get_setting(db, 'signal_sender')
+        recipient = get_setting(db, 'signal_recipient')
+        message   = build_event_announcement(event)
+        success, error = send_signal_message(api_url, sender, recipient, message)
+        log_signal(db, 'event_created', success, event_id=event['id'], error=error)
+    except Exception as e:
+        print(f'Signal notify_event_created error: {e}')
+        try:
+            log_signal(db, 'event_created', False, event_id=event.get('id'), error=str(e))
+        except Exception:
+            pass
 
 
 def notify_daily_summary(db, event_id, summary_date):
@@ -173,21 +180,25 @@ def check_and_notify_all_available(db, event_id, changed_date):
 def notify_event_announcement(db, event_id):
     if not signal_configured(db):
         return False, 'Signal not configured or disabled'
-    event = db.execute('SELECT * FROM events WHERE id = ?', (event_id,)).fetchone()
-    if not event:
-        return False, 'Event not found'
-    api_url   = get_setting(db, 'signal_api_url')
-    sender    = get_setting(db, 'signal_sender')
-    recipient = get_setting(db, 'signal_recipient')
-    message   = build_event_announcement(event)
-    success, error = send_signal_message(api_url, sender, recipient, message)
-    log_signal(db, 'event_created', success, event_id=event_id, error=error)
-    return success, error
+    try:
+        event = db.execute('SELECT * FROM events WHERE id = ?', (event_id,)).fetchone()
+        if not event:
+            return False, 'Event not found'
+        api_url   = get_setting(db, 'signal_api_url')
+        sender    = get_setting(db, 'signal_sender')
+        recipient = get_setting(db, 'signal_recipient')
+        message   = build_event_announcement(dict(event))
+        success, error = send_signal_message(api_url, sender, recipient, message)
+        log_signal(db, 'event_created', success, event_id=event_id, error=error)
+        return success, error
+    except Exception as e:
+        print(f'Signal notify_event_announcement error: {e}')
+        return False, str(e)
 
 
 def fmt_date(iso):
     try:
         d = datetime.strptime(iso, '%Y-%m-%d')
-        return d.strftime('%a, %b %-d')
+        return f"{d.strftime('%a, %b')} {d.day}"
     except Exception:
         return iso

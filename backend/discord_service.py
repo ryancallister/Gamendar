@@ -185,6 +185,6 @@ def notify_event_announcement(db, event_id):
 def fmt_date(iso):
     try:
         d = datetime.strptime(iso, '%Y-%m-%d')
-        return d.strftime('%a, %b %-d')
+        return f"{d.strftime('%a, %b')} {d.day}"
     except Exception:
         return iso
