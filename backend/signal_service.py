@@ -65,7 +65,7 @@ def build_event_announcement(event):
     ]
     if desc:
         lines.append(desc)
-    lines.append("Log in to Gamendar and mark your availability.")
+    lines.append("Log in to Gamendar and mark your availability.\nhttps://gamendar.getpalt.org")
     return '\n'.join(lines)
 
 
