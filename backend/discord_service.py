@@ -117,6 +117,14 @@ def build_all_available(event, users, summary_date):
 def notify_event_created(db, event):
     if not discord_configured(db):
         return
+    # Dedup: don't send if already sent for this event in the last 60 seconds
+    recent = db.execute(
+        "SELECT id FROM discord_log WHERE event_id = ? AND message_type = 'event_created' "
+        "AND success = 1 AND sent_at > datetime('now', '-60 seconds')",
+        (event['id'],)
+    ).fetchone()
+    if recent:
+        return
     url = get_setting(db, 'discord_webhook_url')
     success, error = send_webhook(url, build_event_announcement(event))
     log_discord(db, 'event_created', success, event_id=event['id'], error=error)

@@ -109,6 +109,14 @@ def build_all_available(event, users, summary_date):
 def notify_event_created(db, event):
     if not signal_configured(db):
         return
+    # Dedup: don't send if already sent for this event in the last 60 seconds
+    recent = db.execute(
+        "SELECT id FROM signal_log WHERE event_id = ? AND message_type = 'event_created' "
+        "AND success = 1 AND sent_at > datetime('now', '-60 seconds')",
+        (event['id'],)
+    ).fetchone()
+    if recent:
+        return
     try:
         api_url   = get_setting(db, 'signal_api_url')
         sender    = get_setting(db, 'signal_sender')

@@ -156,7 +156,15 @@ def start_scheduler(app):
                             (today_date, today_date)
                         ).fetchall()
                         for event in events:
-                            notify_daily_summary(db, event['id'], today_date)
+                            # Dedup: skip if already sent in the last 10 minutes
+                            recent = db.execute(
+                                "SELECT id FROM discord_log WHERE event_id = ? AND date = ? "
+                                "AND message_type = 'daily_summary' AND success = 1 "
+                                "AND sent_at > datetime('now', '-10 minutes')",
+                                (event['id'], today_date)
+                            ).fetchone()
+                            if not recent:
+                                notify_daily_summary(db, event['id'], today_date)
             except Exception as e:
                 print(f'Discord scheduler error: {e}')
 
