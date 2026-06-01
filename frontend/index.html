@@ -298,7 +298,6 @@
   .react-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
 
   .emoji-picker-wrap {
-    position: absolute; top: 22px; right: 3px; z-index: 100;
     background: var(--surface2); border: 1px solid var(--border2);
     border-radius: var(--radius); padding: 6px; display: none;
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
@@ -1470,10 +1469,16 @@ function openEmojiPicker(e, btn, eventId, date, targetUserId) {
   // Close any existing pickers
   document.querySelectorAll('.emoji-picker-wrap').forEach(p => p.remove());
 
+  // Position relative to the button, appended to body so it floats above everything
+  const rect = btn.getBoundingClientRect();
+
   const wrap = document.createElement('div');
   wrap.className = 'emoji-picker-wrap open';
+  wrap.style.position = 'fixed';
+  wrap.style.top = (rect.bottom + 4) + 'px';
+  wrap.style.left = rect.left + 'px';
+  wrap.style.zIndex = '9999';
 
-  // Hidden input that triggers native emoji keyboard
   const hiddenInput = document.createElement('input');
   hiddenInput.type = 'text';
   hiddenInput.className = 'emoji-input-field';
@@ -1485,10 +1490,8 @@ function openEmojiPicker(e, btn, eventId, date, targetUserId) {
 
   wrap.appendChild(hiddenInput);
   wrap.appendChild(trigger);
-  btn.closest('.avail-cell').appendChild(wrap);
+  document.body.appendChild(wrap);
 
-  // On desktop: clicking trigger focuses the hidden input, then user types/pastes emoji
-  // The picker intercepts the first emoji character
   trigger.addEventListener('click', (ev) => {
     ev.stopPropagation();
     hiddenInput.style.width = '1px';
@@ -1497,13 +1500,11 @@ function openEmojiPicker(e, btn, eventId, date, targetUserId) {
     hiddenInput.style.position = 'fixed';
     hiddenInput.style.top = '50%';
     hiddenInput.focus();
-    // On mobile this opens the emoji keyboard; on desktop show a small text prompt
     trigger.innerHTML = '⌨️ Type or paste emoji, then Enter';
   });
 
   hiddenInput.addEventListener('input', async (ev) => {
     const val = hiddenInput.value;
-    // Extract the first emoji-like character (handles multi-codepoint emoji)
     const emojiMatch = val.match(/(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u);
     if (emojiMatch) {
       const emoji = emojiMatch[0];
@@ -1525,7 +1526,6 @@ function openEmojiPicker(e, btn, eventId, date, targetUserId) {
     if (ev.key === 'Escape') wrap.remove();
   });
 
-  // Close on outside click
   setTimeout(() => {
     document.addEventListener('click', function handler() {
       wrap.remove();
