@@ -283,6 +283,53 @@
 
   .corner-cell { background: var(--surface2); }
 
+  /* Reactions */
+  .avail-cell { position: relative; }
+  .react-btn {
+    position: absolute; top: 3px; right: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--surface3); border: 1px solid var(--border2);
+    font-size: 10px; cursor: pointer; display: none;
+    align-items: center; justify-content: center; color: var(--text3);
+    transition: all 0.15s; z-index: 10; padding: 0; line-height: 1;
+    font-family: var(--font);
+  }
+  .avail-cell:hover .react-btn { display: flex; }
+  .react-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+
+  .emoji-picker-wrap {
+    position: absolute; top: 22px; right: 3px; z-index: 100;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 6px; display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .emoji-picker-wrap.open { display: block; }
+  .emoji-input-field {
+    width: 0; height: 0; opacity: 0; position: absolute; pointer-events: none;
+  }
+  .emoji-picker-trigger {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text2); white-space: nowrap;
+    cursor: pointer; padding: 4px 8px; border-radius: 6px;
+    background: var(--surface3); border: 1px solid var(--border2);
+  }
+  .emoji-picker-trigger:hover { border-color: var(--accent); color: var(--text); }
+
+  .reaction-badges {
+    position: absolute; top: 2px; right: 2px;
+    display: flex; flex-wrap: wrap; gap: 2px; justify-content: flex-end;
+    max-width: 70%; pointer-events: none; z-index: 5;
+  }
+  .reaction-badge {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 1px 5px; font-size: 11px;
+    display: flex; align-items: center; gap: 2px; cursor: pointer;
+    pointer-events: all; transition: border-color 0.15s; white-space: nowrap;
+  }
+  .reaction-badge:hover { border-color: var(--accent); }
+  .reaction-badge.mine { border-color: var(--accent); background: var(--accent-glow); }
+  .reaction-badge .react-count { font-size: 10px; color: var(--text2); font-family: var(--mono); }
+
   /* LEGEND */
   .legend { display: flex; gap: 16px; margin-bottom: 1.5rem; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); }
@@ -779,16 +826,28 @@ async function loadEventDetail(eventId) {
         <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Delete</button>`;
     } else { adminBtns.innerHTML = ''; }
 
-    renderWeekGrid(data);
+    const reactionsData = await api(`/reactions/event/${eventId}`).catch(() => []);
+    renderWeekGrid(data, reactionsData);
   } catch(e) {
     document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${e.message}</div>`;
   }
 }
 
-function renderWeekGrid(data) {
+function renderWeekGrid(data, reactionsData) {
   const ev = data.event;
   const users = data.users;
   const availability = data.availability;
+
+  // Build reaction map: date -> target_user_id -> { emoji -> [reactor_usernames] }
+  const rxMap = {};
+  const myRxMap = {}; // date_targetUserId -> emoji I reacted with
+  for (const r of (reactionsData || [])) {
+    const key = r.date + '_' + r.target_user_id;
+    if (!rxMap[key]) rxMap[key] = {};
+    if (!rxMap[key][r.emoji]) rxMap[key][r.emoji] = [];
+    rxMap[key][r.emoji].push(r.reactor_username);
+    if (r.user_id === currentUser.id) myRxMap[key] = r.emoji;
+  }
 
   // Build live mirror of availability state for accurate summary recounts
   liveAvailability = {};
@@ -873,6 +932,8 @@ function renderWeekGrid(data) {
               onkeydown="if(event.key==='Enter'){this.blur();}">
             ${myNote && myNoteIdx >= 0 ? `<a class="note-link" onclick="scrollToNote(${myNoteIdx})">● 1 Note</a>` : ''}
           </div>
+          ${buildReactionBadges(rxMap, myRxMap, iso, user.id, currentEventId)}
+          <button class="react-btn" onclick="openEmojiPicker(event, this, ${currentEventId}, '${iso}', ${user.id})" title="React">+</button>
         </div>`;
       } else {
         const pillLabel = { available: '✓ Available', unavailable: '✗ Unavailable', maybe: '~ Maybe', '': '—' };
@@ -884,6 +945,8 @@ function renderWeekGrid(data) {
             ${otherNote ? `<div class="avail-note-text" title="${esc(otherNote)}">${esc(otherNote)}</div>` : ''}
             ${otherNote && noteIdx >= 0 ? `<a class="note-link" onclick="scrollToNote(${noteIdx})">● 1 Note</a>` : ''}
           </div>
+          ${buildReactionBadges(rxMap, myRxMap, iso, user.id, currentEventId)}
+          <button class="react-btn" onclick="openEmojiPicker(event, this, ${currentEventId}, '${iso}', ${user.id})" title="React">+</button>
         </div>`;
       }
     }
@@ -1378,6 +1441,112 @@ function toast(msg) {
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(d) { return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
+
+
+// ─── REACTIONS ────────────────────────────────────────────────────
+
+function buildReactionBadges(rxMap, myRxMap, date, targetUserId, eventId) {
+  const key = date + '_' + targetUserId;
+  const reactions = rxMap[key] || {};
+  const myEmoji = myRxMap[key] || null;
+  const entries = Object.entries(reactions);
+  if (!entries.length) return '';
+  const badges = entries.map(([emoji, users]) => {
+    const isMine = emoji === myEmoji;
+    const title = users.join(', ');
+    return `<span class="reaction-badge${isMine ? ' mine' : ''}" 
+      title="${esc(title)}"
+      onclick="toggleReaction(${eventId}, '${date}', ${targetUserId}, '${emoji}')">
+      ${emoji}<span class="react-count">${users.length > 1 ? users.length : ''}</span>
+    </span>`;
+  }).join('');
+  return `<div class="reaction-badges">${badges}</div>`;
+}
+
+let _emojiPickerTarget = null;
+
+function openEmojiPicker(e, btn, eventId, date, targetUserId) {
+  e.stopPropagation();
+  // Close any existing pickers
+  document.querySelectorAll('.emoji-picker-wrap').forEach(p => p.remove());
+
+  const wrap = document.createElement('div');
+  wrap.className = 'emoji-picker-wrap open';
+
+  // Hidden input that triggers native emoji keyboard
+  const hiddenInput = document.createElement('input');
+  hiddenInput.type = 'text';
+  hiddenInput.className = 'emoji-input-field';
+  hiddenInput.setAttribute('inputmode', 'text');
+
+  const trigger = document.createElement('div');
+  trigger.className = 'emoji-picker-trigger';
+  trigger.innerHTML = '😀 Pick an emoji';
+
+  wrap.appendChild(hiddenInput);
+  wrap.appendChild(trigger);
+  btn.closest('.avail-cell').appendChild(wrap);
+
+  // On desktop: clicking trigger focuses the hidden input, then user types/pastes emoji
+  // The picker intercepts the first emoji character
+  trigger.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    hiddenInput.style.width = '1px';
+    hiddenInput.style.height = '1px';
+    hiddenInput.style.opacity = '0.01';
+    hiddenInput.style.position = 'fixed';
+    hiddenInput.style.top = '50%';
+    hiddenInput.focus();
+    // On mobile this opens the emoji keyboard; on desktop show a small text prompt
+    trigger.innerHTML = '⌨️ Type or paste emoji, then Enter';
+  });
+
+  hiddenInput.addEventListener('input', async (ev) => {
+    const val = hiddenInput.value;
+    // Extract the first emoji-like character (handles multi-codepoint emoji)
+    const emojiMatch = val.match(/(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u);
+    if (emojiMatch) {
+      const emoji = emojiMatch[0];
+      wrap.remove();
+      await toggleReaction(eventId, date, targetUserId, emoji);
+    }
+  });
+
+  hiddenInput.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') {
+      const val = hiddenInput.value.trim();
+      if (val) {
+        const emojiMatch = val.match(/(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u);
+        const emoji = emojiMatch ? emojiMatch[0] : val[0];
+        wrap.remove();
+        toggleReaction(eventId, date, targetUserId, emoji);
+      }
+    }
+    if (ev.key === 'Escape') wrap.remove();
+  });
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function handler() {
+      wrap.remove();
+      document.removeEventListener('click', handler);
+    }, { once: true });
+  }, 0);
+}
+
+async function toggleReaction(eventId, date, targetUserId, emoji) {
+  try {
+    await api(`/reactions/event/${eventId}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ date, target_user_id: targetUserId, emoji })
+    });
+    // Refresh the grid reactions without full reload
+    const reactionsData = await api(`/reactions/event/${eventId}`).catch(() => []);
+    renderWeekGrid(currentEventData, reactionsData);
+  } catch(e) {
+    toast('Failed to react: ' + e.message);
+  }
+}
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 function toggleActionMenu(e, id) {

@@ -76,6 +76,20 @@ def init_db(app):
                 FOREIGN KEY (event_id) REFERENCES events(id)
             );
 
+            CREATE TABLE IF NOT EXISTS reactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                event_id INTEGER NOT NULL,
+                date TEXT NOT NULL,
+                target_user_id INTEGER NOT NULL,
+                emoji TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, event_id, date, target_user_id),
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (event_id) REFERENCES events(id),
+                FOREIGN KEY (target_user_id) REFERENCES users(id)
+            );
+
             CREATE TABLE IF NOT EXISTS signal_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 event_id INTEGER,
