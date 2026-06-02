@@ -61,10 +61,15 @@ def create_event(current_user):
     if not data or not data.get('title') or not data.get('week_start') or not data.get('week_end'):
         return jsonify({'error': 'Title, week_start, and week_end required'}), 400
 
+    title = str(data['title']).strip()[:100]
+    description = str(data.get('description', '')).strip()[:500]
+    week_start = str(data['week_start'])[:10]
+    week_end = str(data['week_end'])[:10]
+
     db = get_db()
     cursor = db.execute(
         'INSERT INTO events (title, description, week_start, week_end, created_by) VALUES (?, ?, ?, ?, ?)',
-        (data['title'], data.get('description', ''), data['week_start'], data['week_end'], current_user['id'])
+        (title, description, week_start, week_end, current_user['id'])
     )
     db.commit()
 

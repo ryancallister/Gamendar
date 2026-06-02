@@ -45,7 +45,7 @@ def set_availability(current_user, event_id):
             status = excluded.status,
             note = excluded.note,
             updated_at = CURRENT_TIMESTAMP
-    ''', (current_user['id'], event_id, data['date'], status, data.get('note', '')))
+    ''', (current_user['id'], event_id, data['date'], status, str(data.get('note', ''))[:200]))
     db.commit()
 
     try:

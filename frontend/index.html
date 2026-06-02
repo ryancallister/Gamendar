@@ -747,7 +747,10 @@ async function doLogin() {
 function showAuthError(msg) { document.getElementById('auth-error').innerHTML = `<div class="error-msg">${msg}</div>`; }
 function clearAuthError() { document.getElementById('auth-error').innerHTML = ''; }
 
-function doLogout() {
+async function doLogout() {
+  try {
+    await api('/auth/logout', { method: 'POST' });
+  } catch(e) { /* ignore — clear client side regardless */ }
   token = null; currentUser = null;
   localStorage.removeItem('avail_token');
   document.getElementById('app-screen').style.display = 'none';

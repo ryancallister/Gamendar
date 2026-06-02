@@ -4,6 +4,12 @@ from flask import request, jsonify, current_app
 from database import get_db
 
 
+def _is_token_blocked(db, user_id, exp):
+    jti = f"{user_id}:{exp}"
+    row = db.execute('SELECT jti FROM token_blocklist WHERE jti = ?', (jti,)).fetchone()
+    return row is not None
+
+
 def token_required(f):
     @functools.wraps(f)
     def decorated(*args, **kwargs):
@@ -16,6 +22,9 @@ def token_required(f):
         try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
             db = get_db()
+            # Check blocklist
+            if _is_token_blocked(db, data['user_id'], data['exp']):
+                return jsonify({'error': 'Token has been revoked'}), 401
             current_user = db.execute(
                 'SELECT * FROM users WHERE id = ? AND is_active = 1', (data['user_id'],)
             ).fetchone()
@@ -41,6 +50,8 @@ def admin_required(f):
         try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
             db = get_db()
+            if _is_token_blocked(db, data['user_id'], data['exp']):
+                return jsonify({'error': 'Token has been revoked'}), 401
             current_user = db.execute(
                 'SELECT * FROM users WHERE id = ? AND is_active = 1', (data['user_id'],)
             ).fetchone()
