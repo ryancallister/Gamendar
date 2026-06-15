@@ -9,7 +9,6 @@ from routes.availability import availability_bp
 from routes.admin import admin_bp
 from routes.discord import discord_bp, start_scheduler
 from routes.signal import signal_bp, start_signal_scheduler
-from routes.reactions import reactions_bp
 import os
 import sys
 
@@ -51,7 +50,6 @@ app.register_blueprint(availability_bp,  url_prefix='/api/availability')
 app.register_blueprint(admin_bp,         url_prefix='/api/admin')
 app.register_blueprint(discord_bp,       url_prefix='/api/discord')
 app.register_blueprint(signal_bp,        url_prefix='/api/signal')
-app.register_blueprint(reactions_bp,     url_prefix='/api/reactions')
 
 start_scheduler(app)
 start_signal_scheduler(app)

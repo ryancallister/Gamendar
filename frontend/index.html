@@ -158,6 +158,21 @@
   /* EVENTS LIST */
   .events-grid { display: grid; gap: 12px; }
 
+  .prev-events-toggle {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    color: var(--text2); font-size: 14px; font-weight: 500;
+    padding: 10px 0; border: none; background: none; font-family: var(--font);
+    width: 100%; text-align: left; margin-top: 0.5rem;
+    transition: color 0.15s;
+  }
+  .prev-events-toggle:hover { color: var(--text); }
+  .prev-events-toggle .chevron { font-size: 11px; transition: transform 0.2s; display: inline-block; }
+  .prev-events-toggle.open .chevron { transform: rotate(90deg); }
+  .prev-events-section { margin-top: 0.25rem; }
+  .prev-events-grid { display: grid; gap: 8px; margin-top: 0.5rem; }
+  .event-card.past { opacity: 0.65; }
+  .event-card.past:hover { opacity: 0.85; }
+
   .event-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
     padding: 1.25rem 1.5rem; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 1rem;
@@ -283,73 +298,7 @@
 
   .corner-cell { background: var(--surface2); }
 
-  /* Reactions */
-  .avail-cell { position: relative; }
-  .react-btn {
-    position: absolute; top: 3px; right: 3px;
-    width: 18px; height: 18px; border-radius: 50%;
-    background: var(--surface3); border: 1px solid var(--border2);
-    font-size: 10px; cursor: pointer; display: none;
-    align-items: center; justify-content: center; color: var(--text3);
-    transition: all 0.15s; z-index: 10; padding: 0; line-height: 1;
-    font-family: var(--font);
-  }
-  .avail-cell:hover .react-btn { display: flex; }
-  .react-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
 
-  .emoji-picker-wrap {
-    background: var(--surface); border: 1px solid var(--border2);
-    border-radius: var(--radius-lg); display: none;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
-    width: 320px; overflow: hidden;
-  }
-  .emoji-picker-wrap.open { display: flex; flex-direction: column; }
-  .ep-search {
-    padding: 8px; border-bottom: 1px solid var(--border);
-  }
-  .ep-search input {
-    width: 100%; background: var(--bg); border: 1px solid var(--border2);
-    border-radius: 7px; padding: 7px 10px; color: var(--text);
-    font-family: var(--font); font-size: 13px; outline: none;
-  }
-  .ep-search input:focus { border-color: var(--accent); }
-  .ep-cats {
-    display: flex; gap: 2px; padding: 6px 8px; border-bottom: 1px solid var(--border);
-    overflow-x: auto; scrollbar-width: none;
-  }
-  .ep-cats::-webkit-scrollbar { display: none; }
-  .ep-cat-btn {
-    background: none; border: none; cursor: pointer; font-size: 16px;
-    padding: 4px 6px; border-radius: 6px; transition: background 0.1s; flex-shrink: 0;
-  }
-  .ep-cat-btn:hover, .ep-cat-btn.active { background: var(--surface3); }
-  .ep-grid {
-    display: grid; grid-template-columns: repeat(8, 1fr);
-    gap: 2px; padding: 8px; overflow-y: auto; max-height: 240px;
-    scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
-  }
-  .ep-emoji {
-    font-size: 20px; padding: 4px; border-radius: 6px; cursor: pointer;
-    text-align: center; transition: background 0.1s; border: none; background: none;
-    line-height: 1.3;
-  }
-  .ep-emoji:hover { background: var(--surface3); }
-  .ep-empty { padding: 1rem; text-align: center; color: var(--text3); font-size: 13px; grid-column: 1/-1; }
-
-  .reaction-badges {
-    position: absolute; top: 2px; right: 2px;
-    display: flex; flex-wrap: wrap; gap: 2px; justify-content: flex-end;
-    max-width: 70%; pointer-events: none; z-index: 5;
-  }
-  .reaction-badge {
-    background: var(--surface2); border: 1px solid var(--border2);
-    border-radius: 10px; padding: 1px 5px; font-size: 11px;
-    display: flex; align-items: center; gap: 2px; cursor: pointer;
-    pointer-events: all; transition: border-color 0.15s; white-space: nowrap;
-  }
-  .reaction-badge:hover { border-color: var(--accent); }
-  .reaction-badge.mine { border-color: var(--accent); background: var(--accent-glow); }
-  .reaction-badge .react-count { font-size: 10px; color: var(--text2); font-family: var(--mono); }
 
   /* LEGEND */
   .legend { display: flex; gap: 16px; margin-bottom: 1.5rem; flex-wrap: wrap; }
@@ -786,6 +735,25 @@ function showPage(name) {
 }
 
 // ─── EVENTS ─────────────────────────────────────────────────────
+function buildEventCard(ev, isPast) {
+  const start = new Date(ev.week_start + 'T00:00:00');
+  const end   = new Date(ev.week_end   + 'T00:00:00');
+  const card  = document.createElement('div');
+  card.className = 'event-card' + (isPast ? ' past' : '');
+  card.onclick   = () => loadEventDetail(ev.id, isPast);
+  card.innerHTML = `
+    <div class="week-badge">
+      <div class="month">${start.toLocaleDateString('en-US',{month:'short'})}</div>
+      <div class="days">${start.getDate()}–${end.getDate()}</div>
+    </div>
+    <div class="event-info">
+      <div class="event-title">${esc(ev.title)}</div>
+      <div class="event-meta">${ev.description||'No description'} &nbsp;·&nbsp; Created by ${esc(ev.created_by_username)}${isPast ? ' &nbsp;·&nbsp; <span style="color:var(--text3)">view only</span>' : ''}</div>
+    </div>
+  `;
+  return card;
+}
+
 async function loadEvents() {
   const el = document.getElementById('events-list');
   el.innerHTML = '<div style="padding:2rem;text-align:center"><div class="spinner"></div></div>';
@@ -795,31 +763,49 @@ async function loadEvents() {
       el.innerHTML = `<div class="empty"><div class="icon">📅</div><h3>No events yet</h3><p>${currentUser.role==='admin'?'Create your first weekly event above.':'Ask an admin to create an event.'}</p></div>`;
       return;
     }
+
+    // Split: newest event is current, rest are previous (sorted newest first)
+    const sorted = [...events].sort((a, b) => b.week_start.localeCompare(a.week_start));
+    const current  = sorted[0];
+    const previous = sorted.slice(1);
+
     el.innerHTML = '';
-    for (const ev of events) {
-      const start = new Date(ev.week_start + 'T00:00:00');
-      const end = new Date(ev.week_end + 'T00:00:00');
-      const card = document.createElement('div');
-      card.className = 'event-card';
-      card.onclick = () => loadEventDetail(ev.id);
-      card.innerHTML = `
-        <div class="week-badge">
-          <div class="month">${start.toLocaleDateString('en-US',{month:'short'})}</div>
-          <div class="days">${start.getDate()}–${end.getDate()}</div>
-        </div>
-        <div class="event-info">
-          <div class="event-title">${esc(ev.title)}</div>
-          <div class="event-meta">${ev.description||'No description'} &nbsp;·&nbsp; Created by ${esc(ev.created_by_username)}</div>
-        </div>
-      `;
-      el.appendChild(card);
+
+    // Current event
+    el.appendChild(buildEventCard(current, false));
+
+    // Previous events collapsible
+    if (previous.length) {
+      const section = document.createElement('div');
+      section.className = 'prev-events-section';
+
+      const toggle = document.createElement('button');
+      toggle.className = 'prev-events-toggle';
+      toggle.innerHTML = `<span class="chevron">▶</span> Previous events <span style="color:var(--text3);font-size:13px">(${previous.length})</span>`;
+
+      const grid = document.createElement('div');
+      grid.className = 'prev-events-grid';
+      grid.style.display = 'none';
+
+      toggle.onclick = () => {
+        const isOpen = toggle.classList.toggle('open');
+        grid.style.display = isOpen ? 'grid' : 'none';
+        // Populate lazily on first open
+        if (isOpen && !grid.children.length) {
+          previous.forEach(ev => grid.appendChild(buildEventCard(ev, true)));
+        }
+      };
+
+      section.appendChild(toggle);
+      section.appendChild(grid);
+      el.appendChild(section);
     }
   } catch(e) {
     el.innerHTML = `<div class="error-msg">${e.message}</div>`;
   }
 }
 
-async function loadEventDetail(eventId) {
+async function loadEventDetail(eventId, isPast = false) {
   currentEventId = eventId;
   showPage('event-detail');
   document.getElementById('week-grid-wrap').innerHTML = '<div style="padding:3rem;text-align:center"><div class="spinner"></div></div>';
@@ -832,7 +818,7 @@ async function loadEventDetail(eventId) {
     document.getElementById('detail-dates').textContent = `${fmtDate(s)} – ${fmtDate(e)}`;
 
     const adminBtns = document.getElementById('detail-admin-btns');
-    if (currentUser.role === 'admin') {
+    if (currentUser.role === 'admin' && !isPast) {
       adminBtns.innerHTML = `
         <div class="action-menu" id="notify-menu">
           <button class="action-menu-btn" onclick="toggleActionMenu(event, 'notify-dropdown')">
@@ -850,28 +836,17 @@ async function loadEventDetail(eventId) {
         <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Delete</button>`;
     } else { adminBtns.innerHTML = ''; }
 
-    const reactionsData = await api(`/reactions/event/${eventId}`).catch(() => []);
-    renderWeekGrid(data, reactionsData);
+    renderWeekGrid(data, isPast);
   } catch(e) {
     document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${e.message}</div>`;
   }
 }
 
-function renderWeekGrid(data, reactionsData) {
+function renderWeekGrid(data, isPast = false) {
   const ev = data.event;
   const users = data.users;
   const availability = data.availability;
 
-  // Build reaction map: date -> target_user_id -> { emoji -> [reactor_usernames] }
-  const rxMap = {};
-  const myRxMap = {}; // date_targetUserId -> emoji I reacted with
-  for (const r of (reactionsData || [])) {
-    const key = r.date + '_' + r.target_user_id;
-    if (!rxMap[key]) rxMap[key] = {};
-    if (!rxMap[key][r.emoji]) rxMap[key][r.emoji] = [];
-    rxMap[key][r.emoji].push(r.reactor_username);
-    if (r.user_id === currentUser.id) myRxMap[key] = r.emoji;
-  }
 
   // Build live mirror of availability state for accurate summary recounts
   liveAvailability = {};
@@ -944,20 +919,22 @@ function renderWeekGrid(data, reactionsData) {
         const myNoteIdx = myNote ? allNotes.findIndex(n => n.username === user.username && n.date === iso) : -1;
         html += `<div class="week-grid-cell avail-cell" data-user="${user.id}" data-date="${iso}">
           <div class="avail-cell-inner">
-            <select class="avail-select ${pillClass}" onchange="setAvailability(this, ${currentEventId}, '${iso}')">
-              <option value="" ${status===''?'selected':''} class="opt-empty">— No response</option>
-              <option value="available" ${status==='available'?'selected':''} class="opt-available">✓ Available</option>
-              <option value="unavailable" ${status==='unavailable'?'selected':''} class="opt-unavailable">✗ Unavailable</option>
-              <option value="maybe" ${status==='maybe'?'selected':''} class="opt-maybe">~ Maybe</option>
-            </select>
-            <input type="text" class="avail-note-input" placeholder="Add a note…" maxlength="60"
-              value="${esc(myNote)}"
-              onchange="saveNote(this, ${currentEventId}, '${iso}')"
-              onkeydown="if(event.key==='Enter'){this.blur();}">
+            ${isPast
+              ? `<div class="avail-pill-label ${pillClass}">${{available:'✓ Available',unavailable:'✗ Unavailable',maybe:'~ Maybe','':'—'}[status]||'—'}</div>
+                 ${myNote ? `<div class="avail-note-text" title="${esc(myNote)}">${esc(myNote)}</div>` : ''}`
+              : `<select class="avail-select ${pillClass}" onchange="setAvailability(this, ${currentEventId}, '${iso}')">
+                   <option value="" ${status===''?'selected':''} class="opt-empty">— No response</option>
+                   <option value="available" ${status==='available'?'selected':''} class="opt-available">✓ Available</option>
+                   <option value="unavailable" ${status==='unavailable'?'selected':''} class="opt-unavailable">✗ Unavailable</option>
+                   <option value="maybe" ${status==='maybe'?'selected':''} class="opt-maybe">~ Maybe</option>
+                 </select>
+                 <input type="text" class="avail-note-input" placeholder="Add a note…" maxlength="60"
+                   value="${esc(myNote)}"
+                   onchange="saveNote(this, ${currentEventId}, '${iso}')"
+                   onkeydown="if(event.key==='Enter'){this.blur();}">`
+            }
             ${myNote && myNoteIdx >= 0 ? `<a class="note-link" onclick="scrollToNote(${myNoteIdx})">● 1 Note</a>` : ''}
           </div>
-          ${buildReactionBadges(rxMap, myRxMap, iso, user.id, currentEventId)}
-          <button class="react-btn" onclick="openEmojiPicker(event, this, ${currentEventId}, '${iso}', ${user.id})" title="React">+</button>
         </div>`;
       } else {
         const pillLabel = { available: '✓ Available', unavailable: '✗ Unavailable', maybe: '~ Maybe', '': '—' };
@@ -969,8 +946,6 @@ function renderWeekGrid(data, reactionsData) {
             ${otherNote ? `<div class="avail-note-text" title="${esc(otherNote)}">${esc(otherNote)}</div>` : ''}
             ${otherNote && noteIdx >= 0 ? `<a class="note-link" onclick="scrollToNote(${noteIdx})">● 1 Note</a>` : ''}
           </div>
-          ${buildReactionBadges(rxMap, myRxMap, iso, user.id, currentEventId)}
-          <button class="react-btn" onclick="openEmojiPicker(event, this, ${currentEventId}, '${iso}', ${user.id})" title="React">+</button>
         </div>`;
       }
     }
@@ -1467,167 +1442,6 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 function fmtDate(d) { return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 
 
-// ─── REACTIONS ────────────────────────────────────────────────────
-
-function buildReactionBadges(rxMap, myRxMap, date, targetUserId, eventId) {
-  const key = date + '_' + targetUserId;
-  const reactions = rxMap[key] || {};
-  const myEmoji = myRxMap[key] || null;
-  const entries = Object.entries(reactions);
-  if (!entries.length) return '';
-  const badges = entries.map(([emoji, users]) => {
-    const isMine = emoji === myEmoji;
-    const title = (isMine ? '(You) ' : '') + users.join(', ') + (isMine ? ' — click to remove' : '');
-    return `<span class="reaction-badge${isMine ? ' mine' : ''}"
-      title="${esc(title)}"
-      onclick="toggleReaction(${eventId}, '${date}', ${targetUserId}, '${emoji}')">
-      ${emoji}<span class="react-count">${users.length > 1 ? users.length : ''}</span>
-    </span>`;
-  }).join('');
-  return `<div class="reaction-badges">${badges}</div>`;
-}
-
-let _emojiPickerTarget = null;
-
-// ── Emoji data ────────────────────────────────────────────────────
-const EMOJI_CATS = [
-  { icon: '😀', label: 'Smileys', emojis: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'] },
-  { icon: '👋', label: 'People', emojis: ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🫀','🫁','🧠','🦷','🦴','👀','👁','👅','👄','💋','🫦','👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷'] },
-  { icon: '🐶', label: 'Animals', emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🦣','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🦬','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐈','🪶','🐓','🦃','🦤','🦚','🦜','🦢','🦩','🕊','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿','🦔'] },
-  { icon: '🍎', label: 'Food', emojis: ['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶','🫑','🥕','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🦴','🌭','🍔','🍟','🍕','🫓','🥪','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕','🥫','🍱','🍘','🍙','🍚','🍛','🍜','🍝','🍠','🍢','🍣','🍤','🍥','🥮','🍡','🥟','🥠','🥡','🦀','🦞','🦐','🦑','🦪','🍦','🍧','🍨','🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯','🍼','🥛','☕','🫖','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾'] },
-  { icon: '⚽', label: 'Activity', emojis: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🪃','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸','🥌','🎿','⛷','🏂','🪂','🏋️','🤼','🤸','⛹','🤺','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖','🏵','🎗','🎫','🎟','🎪','🤹','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🪘','🎷','🎺','🪗','🎸','🪕','🎻','🎲','♟','🎯','🎳','🎮','🎰','🧩'] },
-  { icon: '🚗', label: 'Travel', emojis: ['🚗','🚕','🚙','🚌','🚎','🏎','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🏍','🛵','🛺','🚲','🛴','🛹','🛼','🚏','🛣','🛤','⛽','🚨','🚥','🚦','🛑','🚧','⚓','🛟','⛵','🛶','🚤','🛳','⛴','🛥','🚢','✈️','🛩','🛫','🛬','🪂','💺','🚁','🚟','🚠','🚡','🛰','🚀','🛸','🪐','🌍','🌎','🌏','🌐','🗾','🧭','🏔','⛰','🌋','🗻','🏕','🏖','🏜','🏝','🏞','🏟','🏛','🏗','🧱','🪨','🪵','🛖','🏘','🏚','🏠','🏡','🏢','🏣','🏤','🏥','🏦','🏨','🏩','🏪','🏫','🏬','🏭','🏯','🏰','💒','🗼','🗽','⛪','🕌','🛕','🕍','⛩','🕋','⛲','⛺','🌁','🌃','🏙','🌄','🌅','🌆','🌇','🌉','♨️','🎠','🛝','🎡','🎢','💈','🎪'] },
-  { icon: '💡', label: 'Objects', emojis: ['⌚','📱','📲','💻','⌨️','🖥','🖨','🖱','🖲','🕹','🗜','💽','💾','💿','📀','📼','📷','📸','📹','🎥','📽','🎞','📞','☎️','📟','📠','📺','📻','🧭','⏱','⏲','⏰','🕰','⌛','⏳','📡','🔋','🪫','🔌','💡','🔦','🕯','🪔','🧯','🛢','💰','🪙','💴','💵','💶','💷','💸','💳','🧾','💹','📈','📉','📊','📋','📌','📍','📎','🖇','📏','📐','✂️','🗃','🗄','🗑','🔒','🔓','🔏','🔐','🔑','🗝','🔨','🪓','⛏','⚒','🛠','🗡','⚔️','🛡','🪚','🔧','🪛','🔩','⚙️','🗜','⚖️','🦯','🔗','⛓','🪝','🧲','🪜','⚗️','🧪','🧫','🧬','🔭','🔬','🕳','🩹','🩺','🩻','💊','💉','🩸','🧬','🦠','🧫','🧪'] },
-  { icon: '❤️', label: 'Symbols', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','❤️‍🩹','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🔕','🔇','🔈','🔉','🔊','📣','📢','💬','💭','🗯','♠️','♣️','♥️','♦️','🃏','🀄','🎴','🔔','🔕','🎵','🎶','✅','❎','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔠','🔡','🔢','🔣','🔤','🅰️','🆎','🅱️','🆑','🆘','🆚'] },
-];
-
-let _currentEpCat = 0;
-let _currentEpSearch = '';
-
-function openEmojiPicker(e, btn, eventId, date, targetUserId) {
-  e.stopPropagation();
-  document.querySelectorAll('.emoji-picker-wrap').forEach(p => p.remove());
-
-  const rect = btn.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'emoji-picker-wrap open';
-  wrap.style.position = 'fixed';
-  wrap.style.zIndex = '9999';
-
-  // Search bar
-  const searchDiv = document.createElement('div');
-  searchDiv.className = 'ep-search';
-  const searchInput = document.createElement('input');
-  searchInput.placeholder = '🔍 Search emoji…';
-  searchInput.autocomplete = 'off';
-  searchDiv.appendChild(searchInput);
-
-  // Category bar
-  const catBar = document.createElement('div');
-  catBar.className = 'ep-cats';
-  EMOJI_CATS.forEach((cat, i) => {
-    const btn2 = document.createElement('button');
-    btn2.className = 'ep-cat-btn' + (i === _currentEpCat ? ' active' : '');
-    btn2.textContent = cat.icon;
-    btn2.title = cat.label;
-    btn2.onclick = (ev) => {
-      ev.stopPropagation();
-      _currentEpCat = i;
-      _currentEpSearch = '';
-      searchInput.value = '';
-      catBar.querySelectorAll('.ep-cat-btn').forEach((b,j) => b.classList.toggle('active', j===i));
-      renderGrid();
-    };
-    catBar.appendChild(btn2);
-  });
-
-  // Emoji grid
-  const grid = document.createElement('div');
-  grid.className = 'ep-grid';
-
-  function renderGrid() {
-    grid.innerHTML = '';
-    const query = _currentEpSearch.toLowerCase();
-    let emojis = query
-      ? EMOJI_CATS.flatMap(c => c.emojis).filter((em, idx, arr) => {
-          // Simple heuristic: show all emojis when searching (full set)
-          return arr.indexOf(em) === idx;
-        })
-      : EMOJI_CATS[_currentEpCat].emojis;
-
-    // Filter by search across all categories
-    if (query) {
-      emojis = EMOJI_CATS.flatMap(c => c.emojis).filter((v,i,a) => a.indexOf(v)===i);
-    }
-
-    if (!emojis.length) {
-      grid.innerHTML = '<div class="ep-empty">No emoji found</div>';
-      return;
-    }
-    emojis.forEach(em => {
-      const btn2 = document.createElement('button');
-      btn2.className = 'ep-emoji';
-      btn2.textContent = em;
-      btn2.title = em;
-      btn2.onclick = (ev) => {
-        ev.stopPropagation();
-        wrap.remove();
-        toggleReaction(eventId, date, targetUserId, em);
-      };
-      grid.appendChild(btn2);
-    });
-  }
-
-  searchInput.addEventListener('input', () => {
-    _currentEpSearch = searchInput.value;
-    renderGrid();
-  });
-  searchInput.addEventListener('keydown', e => e.stopPropagation());
-
-  wrap.appendChild(searchDiv);
-  wrap.appendChild(catBar);
-  wrap.appendChild(grid);
-  document.body.appendChild(wrap);
-
-  // Position: prefer below-left of button, flip up if near bottom
-  const pickerH = 320;
-  const pickerW = 320;
-  let top = rect.bottom + 4;
-  let left = rect.left;
-  if (top + pickerH > vh) top = rect.top - pickerH - 4;
-  if (left + pickerW > vw) left = vw - pickerW - 8;
-  wrap.style.top = Math.max(4, top) + 'px';
-  wrap.style.left = Math.max(4, left) + 'px';
-
-  renderGrid();
-  searchInput.focus();
-
-  setTimeout(() => {
-    document.addEventListener('click', function handler(ev) {
-      if (!wrap.contains(ev.target)) {
-        wrap.remove();
-        document.removeEventListener('click', handler);
-      }
-    });
-  }, 0);
-}
-
-async function toggleReaction(eventId, date, targetUserId, emoji) {
-  try {
-    await api(`/reactions/event/${eventId}/set`, {
-      method: 'POST',
-      body: JSON.stringify({ date, target_user_id: targetUserId, emoji })
-    });
-    // Refresh the grid reactions without full reload
-    const reactionsData = await api(`/reactions/event/${eventId}`).catch(() => []);
-    renderWeekGrid(currentEventData, reactionsData);
-  } catch(e) {
-    toast('Failed to react: ' + e.message);
-  }
-}
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 function toggleActionMenu(e, id) {
