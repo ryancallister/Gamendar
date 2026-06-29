@@ -3,7 +3,9 @@ from database import get_db
 from auth_utils import admin_required
 from signal_service import (
     get_setting, send_signal_message, signal_configured,
-    notify_daily_summary, notify_event_announcement
+    notify_daily_summary, notify_event_announcement,
+    TEMPLATE_DEFAULTS, TEMPLATE_PLACEHOLDERS, render_template,
+    build_event_announcement, build_daily_summary, build_all_available
 )
 import threading
 import time
@@ -62,6 +64,97 @@ def test_signal(current_user):
     if success:
         return jsonify({'message': 'Test message sent!'})
     return jsonify({'error': f'Failed: {error}'}), 400
+
+
+# ── Message templates ─────────────────────────────────────────────
+
+TEMPLATE_KEYS = ['signal_template_event_created', 'signal_template_daily_summary',
+                  'signal_template_all_available']
+
+
+@signal_bp.route('/templates', methods=['GET'])
+@admin_required
+def get_templates(current_user):
+    db = get_db()
+    result = {}
+    for key in TEMPLATE_KEYS:
+        custom = get_setting(db, key)
+        result[key] = {
+            'value': custom or TEMPLATE_DEFAULTS[key],
+            'is_custom': bool(custom),
+            'default': TEMPLATE_DEFAULTS[key],
+            'placeholders': TEMPLATE_PLACEHOLDERS[key],
+        }
+    return jsonify(result)
+
+
+@signal_bp.route('/templates', methods=['POST'])
+@admin_required
+def save_templates(current_user):
+    data = request.get_json() or {}
+    db = get_db()
+    for key in TEMPLATE_KEYS:
+        if key not in data:
+            continue
+        val = str(data[key]).strip()
+        if not val:
+            # Empty means revert to default — delete the override
+            db.execute('DELETE FROM settings WHERE key = ?', (key,))
+        else:
+            db.execute(
+                'INSERT INTO settings (key, value) VALUES (?, ?) '
+                'ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+                (key, val)
+            )
+    db.commit()
+    return jsonify({'message': 'Templates saved'})
+
+
+@signal_bp.route('/templates/<string:key>/reset', methods=['POST'])
+@admin_required
+def reset_template(current_user, key):
+    if key not in TEMPLATE_KEYS:
+        return jsonify({'error': 'Unknown template'}), 400
+    db = get_db()
+    db.execute('DELETE FROM settings WHERE key = ?', (key,))
+    db.commit()
+    return jsonify({'message': 'Reset to default', 'value': TEMPLATE_DEFAULTS[key]})
+
+
+@signal_bp.route('/templates/preview', methods=['POST'])
+@admin_required
+def preview_template(current_user):
+    """Render a template with realistic sample data so the admin can see the output."""
+    data = request.get_json() or {}
+    key = data.get('key')
+    template = data.get('template', '')
+    if key not in TEMPLATE_KEYS:
+        return jsonify({'error': 'Unknown template'}), 400
+
+    sample_event = {'title': 'Game Night Week', 'description': 'Weekly co-op session',
+                     'week_start': '2026-06-22', 'week_end': '2026-06-28'}
+
+    if key == 'signal_template_event_created':
+        rendered = render_template(
+            template, title=sample_event['title'],
+            description=sample_event['description'] + '\n',
+            week_start='Mon, Jun 22', week_end='Sun, Jun 28'
+        )
+    elif key == 'signal_template_daily_summary':
+        rendered = render_template(
+            template, title=sample_event['title'], summary_date='Thu, Jun 25',
+            available_count=3, unavailable_count=1, maybe_count=1, no_response_count=0,
+            total_count=5, available_names='admin, plat, chubb',
+            unavailable_names='Volve', maybe_names='Wank',
+            no_response_names='—', no_response_line=''
+        )
+    else:  # all_available
+        rendered = render_template(
+            template, title=sample_event['title'], summary_date='Thu, Jun 25',
+            total_count=5, available_names='admin, plat, chubb, Volve, Wank'
+        )
+
+    return jsonify({'preview': rendered})
 
 
 # ── Manual triggers ───────────────────────────────────────────────

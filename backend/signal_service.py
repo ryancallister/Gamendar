@@ -53,23 +53,80 @@ def signal_configured(db):
     return bool(api_url and sender and recipient and enabled == 'true')
 
 
+# ── Default templates (used if no custom template is set) ────────
+DEFAULT_TEMPLATE_EVENT_CREATED = (
+    "📅 New event: {title}\n"
+    "Week: {week_start} – {week_end}\n"
+    "{description}"
+    "Log in to Gamendar and mark your availability."
+)
+
+DEFAULT_TEMPLATE_DAILY_SUMMARY = (
+    "📋 Daily summary — {summary_date}\n"
+    "{title} · {available_count}/{total_count} available\n"
+    "\n"
+    "✅ Available ({available_count}): {available_names}\n"
+    "❌ Unavailable ({unavailable_count}): {unavailable_names}\n"
+    "🤔 Maybe ({maybe_count}): {maybe_names}\n"
+    "{no_response_line}"
+)
+
+DEFAULT_TEMPLATE_ALL_AVAILABLE = (
+    "🎉 Everyone is available on {summary_date}!\n"
+    "{title} · All {total_count} members are free.\n"
+    "Who: {available_names}"
+)
+
+TEMPLATE_DEFAULTS = {
+    'signal_template_event_created': DEFAULT_TEMPLATE_EVENT_CREATED,
+    'signal_template_daily_summary': DEFAULT_TEMPLATE_DAILY_SUMMARY,
+    'signal_template_all_available': DEFAULT_TEMPLATE_ALL_AVAILABLE,
+}
+
+TEMPLATE_PLACEHOLDERS = {
+    'signal_template_event_created': ['title', 'description', 'week_start', 'week_end'],
+    'signal_template_daily_summary': ['title', 'summary_date', 'available_count', 'unavailable_count',
+                                       'maybe_count', 'no_response_count', 'total_count',
+                                       'available_names', 'unavailable_names', 'maybe_names',
+                                       'no_response_names', 'no_response_line'],
+    'signal_template_all_available': ['title', 'summary_date', 'total_count', 'available_names'],
+}
+
+
+def render_template(template, **kwargs):
+    # Safely format a template string, leaving unknown placeholders untouched.
+    class SafeDict(dict):
+        def __missing__(self, key):
+            return '{' + key + '}'
+    try:
+        return template.format_map(SafeDict(**kwargs))
+    except Exception:
+        return template
+
+
 # ── Message builders (plain text for Signal) ──────────────────────
 
-def build_event_announcement(event):
+def build_event_announcement(event, db=None):
     start = fmt_date(event['week_start'])
     end = fmt_date(event['week_end'])
     desc = event.get('description') or ''
-    lines = [
-        f"📅 New event: {event['title']}",
-        f"Week: {start} – {end}",
-    ]
-    if desc:
-        lines.append(desc)
-    lines.append("Log in to Gamendar and mark your availability.")
-    return '\n'.join(lines)
+
+    template = None
+    if db is not None:
+        template = get_setting(db, 'signal_template_event_created')
+    if not template:
+        template = DEFAULT_TEMPLATE_EVENT_CREATED
+
+    return render_template(
+        template,
+        title=event['title'],
+        description=(desc + '\n') if desc else '',
+        week_start=start,
+        week_end=end,
+    )
 
 
-def build_daily_summary(event, availability_rows, users, summary_date):
+def build_daily_summary(event, availability_rows, users, summary_date, db=None):
     available   = [r for r in availability_rows if r['date'] == summary_date and r['status'] == 'available']
     unavailable = [r for r in availability_rows if r['date'] == summary_date and r['status'] == 'unavailable']
     maybe       = [r for r in availability_rows if r['date'] == summary_date and r['status'] == 'maybe']
@@ -82,25 +139,46 @@ def build_daily_summary(event, availability_rows, users, summary_date):
     total = len(users)
     avail_count = len(available)
 
-    lines = [
-        f"📋 Daily summary — {fmt_date(summary_date)}",
-        f"{event['title']} · {avail_count}/{total} available",
-        "",
-        f"✅ Available ({len(available)}): {names(available)}",
-        f"❌ Unavailable ({len(unavailable)}): {names(unavailable)}",
-        f"🤔 Maybe ({len(maybe)}): {names(maybe)}",
-    ]
-    if no_response:
-        lines.append(f"⏳ No response ({len(no_response)}): {names(no_response)}")
-    return '\n'.join(lines)
+    no_response_line = f"⏳ No response ({len(no_response)}): {names(no_response)}" if no_response else ''
+
+    template = None
+    if db is not None:
+        template = get_setting(db, 'signal_template_daily_summary')
+    if not template:
+        template = DEFAULT_TEMPLATE_DAILY_SUMMARY
+
+    return render_template(
+        template,
+        title=event['title'],
+        summary_date=fmt_date(summary_date),
+        available_count=avail_count,
+        unavailable_count=len(unavailable),
+        maybe_count=len(maybe),
+        no_response_count=len(no_response),
+        total_count=total,
+        available_names=names(available),
+        unavailable_names=names(unavailable),
+        maybe_names=names(maybe),
+        no_response_names=names(no_response),
+        no_response_line=no_response_line,
+    )
 
 
-def build_all_available(event, users, summary_date):
+def build_all_available(event, users, summary_date, db=None):
     names = ', '.join(u['username'] for u in users)
-    return (
-        f"🎉 Everyone is available on {fmt_date(summary_date)}!\n"
-        f"{event['title']} · All {len(users)} members are free.\n"
-        f"Who: {names}"
+
+    template = None
+    if db is not None:
+        template = get_setting(db, 'signal_template_all_available')
+    if not template:
+        template = DEFAULT_TEMPLATE_ALL_AVAILABLE
+
+    return render_template(
+        template,
+        title=event['title'],
+        summary_date=fmt_date(summary_date),
+        total_count=len(users),
+        available_names=names,
     )
 
 
@@ -121,7 +199,7 @@ def notify_event_created(db, event):
         api_url   = get_setting(db, 'signal_api_url')
         sender    = get_setting(db, 'signal_sender')
         recipient = get_setting(db, 'signal_recipient')
-        message   = build_event_announcement(event)
+        message   = build_event_announcement(event, db=db)
         success, error = send_signal_message(api_url, sender, recipient, message)
         log_signal(db, 'event_created', success, event_id=event['id'], error=error)
     except Exception as e:
@@ -150,7 +228,7 @@ def notify_daily_summary(db, event_id, summary_date):
     api_url   = get_setting(db, 'signal_api_url')
     sender    = get_setting(db, 'signal_sender')
     recipient = get_setting(db, 'signal_recipient')
-    message   = build_daily_summary(event, availability, users, summary_date)
+    message   = build_daily_summary(event, availability, users, summary_date, db=db)
     success, error = send_signal_message(api_url, sender, recipient, message)
     log_signal(db, 'daily_summary', success, event_id=event_id, date_str=summary_date, error=error)
     return success, error
@@ -180,7 +258,7 @@ def check_and_notify_all_available(db, event_id, changed_date):
     api_url   = get_setting(db, 'signal_api_url')
     sender    = get_setting(db, 'signal_sender')
     recipient = get_setting(db, 'signal_recipient')
-    message   = build_all_available(event, users, changed_date)
+    message   = build_all_available(event, users, changed_date, db=db)
     success, error = send_signal_message(api_url, sender, recipient, message)
     log_signal(db, 'all_available', success, event_id=event_id, date_str=changed_date, error=error)
 
@@ -195,7 +273,7 @@ def notify_event_announcement(db, event_id):
         api_url   = get_setting(db, 'signal_api_url')
         sender    = get_setting(db, 'signal_sender')
         recipient = get_setting(db, 'signal_recipient')
-        message   = build_event_announcement(dict(event))
+        message   = build_event_announcement(dict(event), db=db)
         success, error = send_signal_message(api_url, sender, recipient, message)
         log_signal(db, 'event_created', success, event_id=event_id, error=error)
         return success, error

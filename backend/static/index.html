@@ -402,6 +402,31 @@
 
   .section-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1rem; }
 
+  .template-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+  .template-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+  .template-card-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .template-custom-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: var(--accent-glow); color: var(--accent); }
+  .template-textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--mono);
+    font-size: 13px; line-height: 1.5; resize: vertical; min-height: 110px; outline: none;
+  }
+  .template-textarea:focus { border-color: var(--accent); }
+  .template-placeholders { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 0.6rem; }
+  .template-placeholder-chip {
+    font-family: var(--mono); font-size: 11px; background: var(--surface3); color: var(--text2);
+    padding: 3px 8px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border2);
+    transition: all 0.15s;
+  }
+  .template-placeholder-chip:hover { border-color: var(--accent); color: var(--text); }
+  .template-card-actions { display: flex; gap: 8px; margin-top: 0.75rem; align-items: center; }
+  .template-preview {
+    margin-top: 0.6rem; padding: 10px 12px; background: var(--surface2); border-radius: 8px;
+    border: 1px dashed var(--border2); font-size: 13px; color: var(--text2);
+    white-space: pre-wrap; display: none; font-family: var(--mono); line-height: 1.5;
+  }
+  .template-preview.open { display: block; }
+
   .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--text2); font-size: 14px; margin-bottom: 1.25rem; cursor: pointer; border: none; background: none; font-family: var(--font); padding: 0; transition: color 0.15s; }
   .back-btn:hover { color: var(--text); }
 
@@ -640,6 +665,12 @@
               <div>🎉 <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
             </div>
           </div>
+
+          <div style="margin-top:1.5rem">
+            <p class="section-title" style="margin-bottom:0.75rem">Message templates</p>
+            <div id="signal-templates-list" style="display:flex;flex-direction:column;gap:1.25rem">Loading…</div>
+          </div>
+
           <div style="margin-top:1.5rem">
             <p class="section-title" style="margin-bottom:0.5rem">Recent log</p>
             <div id="signal-log-list" style="font-size:13px;color:var(--text2)">Loading…</div>
@@ -731,7 +762,7 @@ function showPage(name) {
   const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
   if (navEl) navEl.classList.add('active');
   if (name === 'events') loadEvents();
-  if (name === 'admin') { loadUsers(); loadDiscordSettings(); loadSignalSettings(); }
+  if (name === 'admin') { loadUsers(); loadDiscordSettings(); loadSignalSettings(); loadSignalTemplates(); }
 }
 
 // ─── EVENTS ─────────────────────────────────────────────────────
@@ -1299,6 +1330,96 @@ async function loadSignalLog() {
       </div>`).join('');
   } catch(e) {
     el.textContent = 'Could not load log.';
+  }
+}
+
+// ─── SIGNAL MESSAGE TEMPLATES ──────────────────────────────────────
+const TEMPLATE_LABELS = {
+  signal_template_event_created: { icon: '📅', title: 'New event announcement' },
+  signal_template_daily_summary:  { icon: '📋', title: 'Daily summary' },
+  signal_template_all_available:  { icon: '🎉', title: 'Everyone available' },
+};
+
+async function loadSignalTemplates() {
+  const el = document.getElementById('signal-templates-list');
+  if (!el) return;
+  try {
+    const data = await api('/signal/templates');
+    el.innerHTML = Object.entries(data).map(([key, tpl]) => {
+      const meta = TEMPLATE_LABELS[key] || { icon: '✉️', title: key };
+      return `
+      <div class="template-card" id="tpl-card-${key}">
+        <div class="template-card-header">
+          <div class="template-card-title">${meta.icon} ${meta.title}</div>
+          ${tpl.is_custom ? `<span class="template-custom-badge">Customized</span>` : ''}
+        </div>
+        <textarea class="template-textarea" id="tpl-input-${key}" spellcheck="false">${esc(tpl.value)}</textarea>
+        <div class="template-placeholders">
+          ${tpl.placeholders.map(p => `<span class="template-placeholder-chip" onclick="insertPlaceholder('${key}', '${p}')">{${p}}</span>`).join('')}
+        </div>
+        <div class="template-card-actions">
+          <button class="btn btn-primary btn-sm" style="width:auto" onclick="saveTemplate('${key}')">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="previewTemplate('${key}')">Preview</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetTemplate('${key}')">Reset to default</button>
+        </div>
+        <div class="template-preview" id="tpl-preview-${key}"></div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.textContent = 'Could not load templates.';
+  }
+}
+
+function insertPlaceholder(key, placeholder) {
+  const ta = document.getElementById(`tpl-input-${key}`);
+  if (!ta) return;
+  const start = ta.selectionStart ?? ta.value.length;
+  const end = ta.selectionEnd ?? ta.value.length;
+  const insert = `{${placeholder}}`;
+  ta.value = ta.value.slice(0, start) + insert + ta.value.slice(end);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = start + insert.length;
+}
+
+async function saveTemplate(key) {
+  const ta = document.getElementById(`tpl-input-${key}`);
+  if (!ta) return;
+  try {
+    await api('/signal/templates', {
+      method: 'POST',
+      body: JSON.stringify({ [key]: ta.value })
+    });
+    toast('Template saved!');
+    loadSignalTemplates();
+  } catch(e) {
+    toast('Failed to save template: ' + e.message);
+  }
+}
+
+async function resetTemplate(key) {
+  try {
+    const data = await api(`/signal/templates/${key}/reset`, { method: 'POST' });
+    toast('Reset to default');
+    loadSignalTemplates();
+  } catch(e) {
+    toast('Failed to reset: ' + e.message);
+  }
+}
+
+async function previewTemplate(key) {
+  const ta = document.getElementById(`tpl-input-${key}`);
+  const previewEl = document.getElementById(`tpl-preview-${key}`);
+  if (!ta || !previewEl) return;
+  try {
+    const data = await api('/signal/templates/preview', {
+      method: 'POST',
+      body: JSON.stringify({ key, template: ta.value })
+    });
+    previewEl.textContent = data.preview;
+    previewEl.classList.add('open');
+  } catch(e) {
+    previewEl.textContent = 'Preview failed: ' + e.message;
+    previewEl.classList.add('open');
   }
 }
 
