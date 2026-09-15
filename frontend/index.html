@@ -246,7 +246,6 @@
   .avail-pill.available { background: var(--green-bg); color: var(--green); }
   .avail-pill.unavailable { background: var(--red-bg); color: var(--red); }
   .avail-pill.maybe { background: var(--amber-bg); color: var(--amber); }
-  .avail-pill.empty { background: var(--surface3); color: var(--text3); }
 
   .avail-pill-label {
     width: 100%; border-radius: 7px; padding: 0;
@@ -261,7 +260,6 @@
   .avail-pill-label.available { background: var(--green-bg); color: var(--green); }
   .avail-pill-label.unavailable { background: var(--red-bg); color: var(--red); }
   .avail-pill-label.maybe { background: var(--amber-bg); color: var(--amber); }
-  .avail-pill-label.empty { background: var(--surface3); color: var(--text3); }
 
   /* ── View toggle ─────────────────────────────────────────── */
   .view-toggle { display: flex; gap: 2px; background: var(--bg); border-radius: 8px; padding: 3px; border: 1px solid var(--border2); }
@@ -275,27 +273,35 @@
 
   /* ── Compact grid pills (icon only) ──────────────────────── */
   .avail-pill-compact {
-    width: 30px; height: 30px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 600; flex-shrink: 0;
+    height: 30px; padding: 0 10px; border-radius: 15px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    font-size: 13px; font-weight: 500; flex-shrink: 0; white-space: nowrap;
     background: var(--surface3); color: var(--text3);
+    max-width: 100%; overflow: hidden;
+  }
+  .avail-pill-compact.icon-only {
+    width: 30px; padding: 0; border-radius: 50%;
+    font-size: 15px; font-weight: 600;
   }
   .avail-pill-compact.available   { background: var(--green-bg); color: var(--green); }
   .avail-pill-compact.unavailable { background: var(--red-bg);   color: var(--red); }
   .avail-pill-compact.maybe       { background: var(--amber-bg); color: var(--amber); }
-  .avail-pill-compact.empty       { background: var(--surface3); color: var(--text3); }
+  .avail-pill-compact.st-none     { background: var(--surface3); color: var(--text3); }
 
   .avail-select-compact {
-    width: 100%; max-width: 62px; background: var(--bg); border: 1px solid var(--border2);
-    border-radius: 7px; padding: 4px 2px; font-family: var(--font); font-size: 15px;
-    font-weight: 600; outline: none; cursor: pointer; text-align: center;
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 7px; padding: 4px 6px; font-family: var(--font); font-size: 13px;
+    font-weight: 500; outline: none; cursor: pointer; text-align: center;
     height: 30px; box-sizing: border-box; transition: all 0.15s;
+  }
+  .avail-select-compact.icon-only {
+    max-width: 62px; font-size: 15px; font-weight: 600; padding: 4px 2px;
   }
   .avail-select-compact:focus { border-color: var(--accent); }
   .avail-select-compact.available   { background: var(--green-bg); color: var(--green); border-color: rgba(62,207,142,0.3); }
   .avail-select-compact.unavailable { background: var(--red-bg);   color: var(--red);   border-color: rgba(240,107,107,0.3); }
   .avail-select-compact.maybe       { background: var(--amber-bg); color: var(--amber); border-color: rgba(245,166,35,0.3); }
-  .avail-select-compact.empty       { background: var(--bg); color: var(--text2); }
+  .avail-select-compact.st-none     { background: var(--bg); color: var(--text2); }
   .avail-select-compact option { background: #1a1f2e; color: #eef0f6; font-size: 13px; }
 
   .note-dot {
@@ -375,7 +381,6 @@
   .avail-select.available { background: var(--green-bg); color: var(--green); border-color: rgba(62,207,142,0.3); }
   .avail-select.unavailable { background: var(--red-bg); color: var(--red); border-color: rgba(240,107,107,0.3); }
   .avail-select.maybe { background: var(--amber-bg); color: var(--amber); border-color: rgba(245,166,35,0.3); }
-  .avail-select.empty { background: var(--bg); color: var(--text2); border-color: var(--border2); }
   .avail-select option { background: #1a1f2e; color: #eef0f6; }
   .avail-select option.opt-available { color: #3ecf8e; }
   .avail-select option.opt-unavailable { color: #f06b6b; }
@@ -493,9 +498,9 @@
   #toast.show { transform: translateX(-50%) translateY(0); }
 
   /* EMPTY STATE */
-  .empty { text-align: center; padding: 4rem 2rem; color: var(--text2); }
-  .empty .icon { font-size: 48px; margin-bottom: 1rem; opacity: 0.3; }
-  .empty h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text2); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 1rem; opacity: 0.3; }
+  .empty-state h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
 
   .spinner { width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -949,7 +954,7 @@ async function loadEvents() {
   try {
     const events = await api('/events/');
     if (!events.length) {
-      el.innerHTML = `<div class="empty"><div class="icon">📅</div><h3>No events yet</h3><p>${currentUser.role==='admin'?'Create your first weekly event above.':'Ask an admin to create an event.'}</p></div>`;
+      el.innerHTML = `<div class="empty-state"><div class="icon">📅</div><h3>No events yet</h3><p>${currentUser.role==='admin'?'Create your first weekly event above.':'Ask an admin to create an event.'}</p></div>`;
       return;
     }
 
@@ -1031,18 +1036,26 @@ async function loadEventDetail(eventId, isPast = false) {
     renderWeekGrid(data, isPast);
     renderAvailForm(data, isPast);
 
-    // Default to the form when the user hasn't set anything yet
-    const myCount = data.availability.filter(a =>
-      a.user_id === currentUser.id && ['available','unavailable','maybe'].includes(a.status)
-    ).length;
-    setDetailView(isPast ? 'grid' : (myCount === 0 ? 'form' : (detailView || 'grid')));
+    // "My week" is the default landing view
+    setDetailView(isPast ? 'grid' : (detailView || 'form'));
   } catch(e) {
     document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${e.message}</div>`;
   }
 }
 
+// ─── RESPONSIVE HELPERS ──────────────────────────────────────────
+const COMPACT_MQ = window.matchMedia('(max-width: 640px)');
+function isCompactView() { return COMPACT_MQ.matches; }
+
+// Re-render the grid when crossing the breakpoint so labels switch form
+COMPACT_MQ.addEventListener('change', () => {
+  if (lastGridData) renderWeekGrid(lastGridData, lastGridIsPast);
+});
+
 // ─── DETAIL VIEW TOGGLE ──────────────────────────────────────────
 let detailView = null;
+let lastGridData = null;
+let lastGridIsPast = false;
 
 function setDetailView(view) {
   detailView = view;
@@ -1259,6 +1272,7 @@ async function formCopyLastWeek(eventId) {
 }
 
 function renderWeekGrid(data, isPast = false) {
+  lastGridData = data; lastGridIsPast = isPast;
   const ev = data.event;
   const users = data.users;
   const availability = data.availability;
@@ -1303,6 +1317,12 @@ function renderWeekGrid(data, isPast = false) {
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const statusEmoji = { available: '✓', unavailable: '✗', maybe: '~', '': '—' };
   const statusTitle = { available: 'Available', unavailable: 'Unavailable', maybe: 'Maybe', '': 'No response' };
+  // Icons only on narrow screens; full words when there's room
+  const compact = isCompactView();
+  const iconCls = compact ? ' icon-only' : '';
+  const cellLabel = s2 => compact
+    ? (statusEmoji[s2] || '—')
+    : `${statusEmoji[s2] || '—'} ${statusTitle[s2] || 'No response'}`;
 
   let html = `<div class="week-grid">`;
   // Header row
@@ -1327,7 +1347,7 @@ function renderWeekGrid(data, isPast = false) {
       const iso = d.toISOString().slice(0,10);
       const isWknd = d.getDay()===0||d.getDay()===6;
       const status = (avMap[user.id]||{})[iso] || '';
-      const pillClass = status || 'empty';
+      const pillClass = status || 'st-none';
       const symbol = statusEmoji[status] || '·';
       const myNote = ((avMap[user.id] || {})[iso + '_note']) || '';
       if (isMine) {
@@ -1335,13 +1355,13 @@ function renderWeekGrid(data, isPast = false) {
         html += `<div class="week-grid-cell avail-cell" data-user="${user.id}" data-date="${iso}">
           <div class="avail-cell-inner" style="align-items:center">
             ${isPast
-              ? `<div class="avail-pill-compact ${pillClass}" title="${statusTitle[status]||'No response'}">${symbol}</div>`
-              : `<select class="avail-select-compact ${pillClass}" title="${statusTitle[status]||'No response'}"
+              ? `<div class="avail-pill-compact ${pillClass}${iconCls}" title="${statusTitle[status]||'No response'}">${cellLabel(status)}</div>`
+              : `<select class="avail-select-compact ${pillClass}${iconCls}" title="${statusTitle[status]||'No response'}"
                    onchange="setAvailability(this, ${currentEventId}, '${iso}')">
-                   <option value=""            ${status===''?'selected':''}>—</option>
-                   <option value="available"   ${status==='available'?'selected':''}>✓</option>
-                   <option value="unavailable" ${status==='unavailable'?'selected':''}>✗</option>
-                   <option value="maybe"       ${status==='maybe'?'selected':''}>~</option>
+                   <option value=""            ${status===''?'selected':''}>${cellLabel('')}</option>
+                   <option value="available"   ${status==='available'?'selected':''}>${cellLabel('available')}</option>
+                   <option value="unavailable" ${status==='unavailable'?'selected':''}>${cellLabel('unavailable')}</option>
+                   <option value="maybe"       ${status==='maybe'?'selected':''}>${cellLabel('maybe')}</option>
                  </select>`
             }
             ${myNote && myNoteIdx >= 0 ? `<span class="note-dot" title="${esc(myNote)}" onclick="scrollToNote(${myNoteIdx})"></span>` : ''}
@@ -1352,7 +1372,7 @@ function renderWeekGrid(data, isPast = false) {
         const noteIdx = otherNote ? allNotes.findIndex(n => n.username === user.username && n.date === iso) : -1;
         html += `<div class="week-grid-cell avail-cell">
           <div class="avail-cell-inner" style="align-items:center">
-            <div class="avail-pill-compact ${pillClass}" title="${statusTitle[status]||'No response'}${otherNote ? ' — ' + esc(otherNote) : ''}">${symbol}</div>
+            <div class="avail-pill-compact ${pillClass}${iconCls}" title="${statusTitle[status]||'No response'}${otherNote ? ' — ' + esc(otherNote) : ''}">${cellLabel(status)}</div>
             ${otherNote && noteIdx >= 0 ? `<span class="note-dot" title="${esc(otherNote)}" onclick="scrollToNote(${noteIdx})"></span>` : ''}
           </div>
         </div>`;
@@ -1418,7 +1438,7 @@ async function setAvailability(selectEl, eventId, date) {
 
   // Update select colour + tooltip immediately
   const titles = { available: 'Available', unavailable: 'Unavailable', maybe: 'Maybe', '': 'No response' };
-  selectEl.className = `avail-select-compact ${newStatus || 'empty'}`;
+  selectEl.className = `avail-select-compact ${newStatus || 'st-none'}${isCompactView() ? ' icon-only' : ''}`;
   selectEl.title = titles[newStatus] || 'No response';
 
   try {
@@ -1432,7 +1452,7 @@ async function setAvailability(selectEl, eventId, date) {
     updateSummaryRow();
   } catch(e) {
     selectEl.className = prevClass;
-    selectEl.value = prevStatus === 'empty' ? '' : prevStatus;
+    selectEl.value = prevStatus === 'st-none' ? '' : prevStatus;
     toast('Failed to save: ' + e.message);
   }
 }
