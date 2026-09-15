@@ -26,7 +26,7 @@ A self-hosted team availability scheduler. Users log in and mark which days they
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/ryancallister/gamendar.git
+git clone https://github.com/YOUR_USERNAME/gamendar.git
 cd gamendar
 ```
 
@@ -67,12 +67,12 @@ Password: admin123
 ### Option A — Docker Compose (recommended)
 
 1. Install the **Community Applications** plugin if not already installed
-2. Install the **Compose Manager Plus** plugin from Community Applications
+2. Install the **Docker Compose Manager** plugin from Community Applications
 3. SSH into your Unraid server:
 
 ```bash
 cd /mnt/user/appdata
-git clone https://github.com/ryancallister/gamendar.git
+git clone https://github.com/YOUR_USERNAME/gamendar.git
 cd gamendar
 cp .env.example .env
 nano .env   # set SECRET_KEY and APP_PORT
@@ -92,7 +92,7 @@ docker run -d \
   -e DATABASE_PATH=/data/calendar.db \
   -p 3005:5000 \
   -v /mnt/user/appdata/gamendar/data:/data \
-  ghcr.io/ryancallister/gamendar:latest
+  ghcr.io/YOUR_USERNAME/gamendar:latest
 ```
 
 ### Unraid tips
@@ -271,7 +271,7 @@ To use the pre-built image instead of building locally, update `docker-compose.y
 ```yaml
 services:
   gamendar:
-    image: ghcr.io/ryancallister/gamendar:latest
+    image: ghcr.io/YOUR_USERNAME/gamendar:latest
 ```
 
 ---

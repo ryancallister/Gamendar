@@ -77,10 +77,17 @@ DEFAULT_TEMPLATE_ALL_AVAILABLE = (
     "Who: {available_names}"
 )
 
+DEFAULT_TEMPLATE_NUDGE = (
+    "👋 Hey {username}!\n"
+    "You haven't filled out your availability for {title} ({week_start} – {week_end}) yet.\n"
+    "Hop into Gamendar and mark your days when you get a chance."
+)
+
 TEMPLATE_DEFAULTS = {
     'signal_template_event_created': DEFAULT_TEMPLATE_EVENT_CREATED,
     'signal_template_daily_summary': DEFAULT_TEMPLATE_DAILY_SUMMARY,
     'signal_template_all_available': DEFAULT_TEMPLATE_ALL_AVAILABLE,
+    'signal_template_nudge':         DEFAULT_TEMPLATE_NUDGE,
 }
 
 TEMPLATE_PLACEHOLDERS = {
@@ -90,6 +97,7 @@ TEMPLATE_PLACEHOLDERS = {
                                        'available_names', 'unavailable_names', 'maybe_names',
                                        'no_response_names', 'no_response_line'],
     'signal_template_all_available': ['title', 'summary_date', 'total_count', 'available_names'],
+    'signal_template_nudge':         ['username', 'title', 'week_start', 'week_end', 'days_missing'],
 }
 
 
@@ -183,6 +191,99 @@ def build_all_available(event, users, summary_date, db=None):
 
 
 # ── Trigger functions ─────────────────────────────────────────────
+
+def build_nudge(event, username, days_missing, db=None):
+    template = None
+    if db is not None:
+        template = get_setting(db, 'signal_template_nudge')
+    if not template:
+        template = DEFAULT_TEMPLATE_NUDGE
+
+    return render_template(
+        template,
+        username=username,
+        title=event['title'],
+        week_start=fmt_date(event['week_start']),
+        week_end=fmt_date(event['week_end']),
+        days_missing=days_missing,
+    )
+
+
+def _incomplete_users(db, event_id, event):
+    """Return active users with a signal_number who haven't set all 7 days."""
+    users = db.execute(
+        'SELECT * FROM users WHERE is_active = 1 AND signal_number IS NOT NULL '
+        "AND TRIM(signal_number) != '' ORDER BY username"
+    ).fetchall()
+    result = []
+    for u in users:
+        count = db.execute(
+            'SELECT COUNT(*) FROM availability WHERE event_id = ? AND user_id = ? '
+            "AND status IN ('available','unavailable','maybe')",
+            (event_id, u['id'])
+        ).fetchone()[0]
+        if count < 7:
+            result.append((u, 7 - count))
+    return result
+
+
+def notify_nudge(db, event_id, only_user_id=None):
+    """DM each active user who hasn't completed their availability. Returns (sent, errors)."""
+    if not signal_configured(db):
+        return 0, ['Signal not configured or disabled']
+
+    event = db.execute('SELECT * FROM events WHERE id = ?', (event_id,)).fetchone()
+    if not event:
+        return 0, ['Event not found']
+
+    api_url = get_setting(db, 'signal_api_url')
+    sender  = get_setting(db, 'signal_sender')
+
+    targets = _incomplete_users(db, event_id, event)
+    if only_user_id is not None:
+        targets = [t for t in targets if t[0]['id'] == only_user_id]
+
+    sent, errors = 0, []
+    for user, days_missing in targets:
+        message = build_nudge(dict(event), user['username'], days_missing, db=db)
+        success, error = send_signal_message(api_url, sender, user['signal_number'], message)
+        log_signal(db, 'nudge', success, event_id=event_id, error=error)
+        if success:
+            sent += 1
+        else:
+            errors.append(f"{user['username']}: {error}")
+    return sent, errors
+
+
+def auto_nudge_if_due(db, event_id):
+    """Fire a nudge once, 1 day after the event was created."""
+    if not signal_configured(db):
+        return
+    if get_setting(db, 'signal_nudge_enabled', 'false') != 'true':
+        return
+
+    event = db.execute('SELECT * FROM events WHERE id = ?', (event_id,)).fetchone()
+    if not event:
+        return
+
+    # Only after 24h have passed since creation
+    due = db.execute(
+        "SELECT 1 FROM events WHERE id = ? AND created_at <= datetime('now', '-1 day')",
+        (event_id,)
+    ).fetchone()
+    if not due:
+        return
+
+    # Only once per event
+    already = db.execute(
+        "SELECT id FROM signal_log WHERE event_id = ? AND message_type = 'nudge' AND success = 1",
+        (event_id,)
+    ).fetchone()
+    if already:
+        return
+
+    notify_nudge(db, event_id)
+
 
 def notify_event_created(db, event):
     if not signal_configured(db):
