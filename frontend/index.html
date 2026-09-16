@@ -663,8 +663,8 @@
         <div class="legend-item"><div class="legend-dot red"></div>Unavailable</div>
         <div class="legend-item"><div class="legend-dot gray"></div>No response</div>
         <div class="view-toggle" id="view-toggle" style="margin-left:auto">
-          <button class="view-toggle-btn" id="vt-form" onclick="setDetailView('form')">📝 My week</button>
-          <button class="view-toggle-btn" id="vt-grid" onclick="setDetailView('grid')">📊 Everyone</button>
+          <button class="view-toggle-btn" id="vt-form" onclick="switchDetailView('form')">📝 My week</button>
+          <button class="view-toggle-btn" id="vt-grid" onclick="switchDetailView('grid')">📊 Everyone</button>
         </div>
       </div>
 
@@ -856,6 +856,7 @@ let currentUser = null;
 let currentEventId = null;
 let currentEventData = null;
 let liveAvailability = {}; // date -> { userId -> status }
+let detailDirty = false;   // local edits not yet reflected in the rendered views
 
 // ─── API HELPERS ───────────────────────────────────────────────
 async function api(path, opts = {}) {
@@ -895,6 +896,7 @@ async function doLogout() {
   try {
     await api('/auth/logout', { method: 'POST' });
   } catch(e) { /* ignore — clear client side regardless */ }
+  stopEventPolling();
   token = null; currentUser = null;
   localStorage.removeItem('avail_token');
   document.getElementById('app-screen').style.display = 'none';
@@ -920,6 +922,7 @@ async function enterApp() {
 // ─── NAVIGATION ─────────────────────────────────────────────────
 function showPage(name) {
   if (name === 'admin' && currentUser?.role !== 'admin') return;
+  if (name !== 'event-detail') { stopEventPolling(); currentEventId = null; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + (name === 'event-detail' ? 'event-detail' : name)).classList.add('active');
@@ -1034,11 +1037,15 @@ async function loadEventDetail(eventId, isPast = false) {
     } else { adminBtns.innerHTML = ''; }
 
     // Render both views, then pick which to show
-    renderWeekGrid(data, isPast);
-    renderAvailForm(data, isPast);
+    lastGridIsPast = isPast;
+    renderDetailViews();
+    lastDetailSig = detailSignature(data);
 
     // "My week" is the default landing view
     setDetailView(isPast ? 'grid' : (detailView || 'form'));
+
+    // Past events are read-only history — nothing to keep in sync
+    if (isPast) stopEventPolling(); else startEventPolling();
   } catch(e) {
     document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
@@ -1058,8 +1065,25 @@ let detailView = null;
 let lastGridData = null;
 let lastGridIsPast = false;
 
+function switchDetailView(view) {
+  setDetailView(view);
+  // Pull anything that landed since the last poll so the tab you just
+  // opened is current, rather than whatever was rendered on page load.
+  refreshEventDetail();
+}
+
+// Re-render both views from currentEventData. Cheap (7 days x N users),
+// and keeping them in one place is what stops the two tabs disagreeing.
+function renderDetailViews() {
+  if (!currentEventData) return;
+  renderWeekGrid(currentEventData, lastGridIsPast);
+  renderAvailForm(currentEventData, lastGridIsPast);
+  detailDirty = false;
+}
+
 function setDetailView(view) {
   detailView = view;
+  if (detailDirty) renderDetailViews();
   const formWrap = document.getElementById('avail-form-wrap');
   const gridWrap = document.getElementById('week-grid-wrap');
   const notesSec = document.getElementById('mobile-notes-section');
@@ -1076,6 +1100,84 @@ function setDetailView(view) {
   document.querySelectorAll('#detail-legend .legend-item').forEach(el => {
     el.style.display = isForm ? 'none' : '';
   });
+}
+
+// ─── LIVE REFRESH ────────────────────────────────────────────────
+// The detail page polls while it's open so other people's answers show up
+// without having to leave the event and come back.
+const POLL_MS = 10000;
+let pollTimer = null;
+let lastDetailSig = '';
+
+function detailSignature(data) {
+  const rows = (data.availability || [])
+    .map(a => `${a.user_id}:${a.date}:${a.status}:${a.note || ''}`)
+    .sort().join('|');
+  const users = (data.users || []).map(u => u.id).sort().join(',');
+  return `${users}#${rows}`;
+}
+
+// Don't redraw while someone is mid-interaction — an open status dropdown
+// or a half-typed note keeps focus inside the wrapper.
+function isEditingIn(wrapId) {
+  const wrap = document.getElementById(wrapId);
+  const el = document.activeElement;
+  return !!(wrap && el && el !== document.body && wrap.contains(el));
+}
+
+function startEventPolling() {
+  stopEventPolling();
+  pollTimer = setInterval(refreshEventDetail, POLL_MS);
+}
+
+function stopEventPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function refreshEventDetail() {
+  if (!currentEventId || document.hidden) return;
+  if (!document.getElementById('page-event-detail').classList.contains('active')) return;
+
+  const eventId = currentEventId;
+  let data;
+  try {
+    data = await api(`/events/${eventId}`);
+  } catch(e) {
+    return;                                  // transient — try again next tick
+  }
+  if (eventId !== currentEventId) return;    // navigated away mid-request
+
+  const sig = detailSignature(data);
+  if (sig === lastDetailSig) return;         // nothing changed
+  if (isEditingIn(detailView === 'form' ? 'avail-form-wrap' : 'week-grid-wrap')) return;
+
+  currentEventData = data;
+  lastDetailSig = sig;
+  renderDetailViews();
+  setDetailView(detailView);
+}
+
+// Catch up immediately when the tab comes back to the foreground.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshEventDetail();
+});
+
+// Record a save locally so both views stay correct without a round trip.
+function updateLocalAvailability(date, status, note) {
+  if (!currentEventData) return;
+  const rows = currentEventData.availability;
+  const row = rows.find(a => a.user_id === currentUser.id && a.date === date);
+  if (row) {
+    row.status = status;
+    row.note = note;
+  } else {
+    rows.push({ user_id: currentUser.id, username: currentUser.username,
+                event_id: currentEventId, date, status, note });
+  }
+  if (!liveAvailability[date]) liveAvailability[date] = {};
+  liveAvailability[date][currentUser.id] = status;
+  lastDetailSig = detailSignature(currentEventData);
+  detailDirty = true;
 }
 
 // ─── AVAILABILITY ENTRY FORM ─────────────────────────────────────
@@ -1177,16 +1279,24 @@ async function formSetStatus(iso, status) {
   }
   formUpdateProgress();
 
+  // The API overwrites note on every save, so resend the one already there.
+  const note = formCurrentNote(iso);
+  const saved = clearing ? 'unavailable' : status;
+
   try {
     await api(`/availability/event/${currentEventId}/set`, {
       method: 'POST',
-      body: JSON.stringify({ date: iso, status: clearing ? 'unavailable' : status })
+      body: JSON.stringify({ date: iso, status: saved, note })
     });
-    if (!liveAvailability[iso]) liveAvailability[iso] = {};
-    liveAvailability[iso][currentUser.id] = clearing ? 'unavailable' : status;
+    updateLocalAvailability(iso, saved, note);
   } catch(e) {
     toast('Failed to save: ' + e.message);
   }
+}
+
+function formCurrentNote(iso) {
+  const input = document.querySelector(`#af-note-${iso} input`);
+  return input ? input.value.trim().slice(0, 60) : '';
 }
 
 function formToggleNote(iso) {
@@ -1213,6 +1323,7 @@ async function formSaveNote(iso, value) {
       method: 'POST',
       body: JSON.stringify({ date: iso, status, note })
     });
+    updateLocalAvailability(iso, status, note);
   } catch(e) {
     toast('Failed to save note: ' + e.message);
   }
@@ -1442,14 +1553,18 @@ async function setAvailability(selectEl, eventId, date) {
   selectEl.className = `avail-select-compact ${newStatus || 'st-none'}${isCompactView() ? ' icon-only' : ''}`;
   selectEl.title = titles[newStatus] || 'No response';
 
+  // The API overwrites note on every save, so resend the one already there.
+  const status = newStatus || 'available';
+  const existing = (currentEventData?.availability || [])
+    .find(a => a.user_id === currentUser.id && a.date === date);
+  const note = existing?.note || '';
+
   try {
     await api(`/availability/event/${eventId}/set`, {
       method: 'POST',
-      body: JSON.stringify({ date, status: newStatus || 'available' })
+      body: JSON.stringify({ date, status, note })
     });
-    // Update live mirror
-    if (!liveAvailability[date]) liveAvailability[date] = {};
-    liveAvailability[date][currentUser.id] = newStatus || 'available';
+    updateLocalAvailability(date, status, note);
     updateSummaryRow();
   } catch(e) {
     selectEl.className = prevClass;
