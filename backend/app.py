@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from database import init_db
 from auth_utils import client_ip
+import secret_key as secret_key_mod
 from routes.auth import auth_bp
 from routes.events import events_bp
 from routes.availability import availability_bp
@@ -13,11 +14,14 @@ from routes.recurring import recurring_bp, start_recurring_scheduler
 import os
 import sys
 
-# ── Startup security check ────────────────────────────────────────
-SECRET_KEY = os.environ.get('SECRET_KEY', 'change-me-in-production')
-if SECRET_KEY == 'change-me-in-production':
-    print('FATAL: SECRET_KEY is set to the default value. Set a strong SECRET_KEY environment variable.', file=sys.stderr)
-    sys.exit(1)
+# ── Signing key ───────────────────────────────────────────────────
+# SECRET_KEY from the environment wins; otherwise one is generated and kept
+# in the data volume so a fresh install just works. See secret_key.py.
+DATABASE_PATH = os.environ.get('DATABASE_PATH', '/data/calendar.db')
+SECRET_KEY, SECRET_KEY_SOURCE = secret_key_mod.resolve(database_path=DATABASE_PATH)
+print(secret_key_mod.describe(SECRET_KEY_SOURCE))
+if SECRET_KEY_SOURCE != 'environment' and not secret_key_mod.key_is_private(SECRET_KEY_SOURCE):
+    print(f'WARNING: {SECRET_KEY_SOURCE} is readable by other users on the host.', file=sys.stderr)
 
 # In the image the UI is copied to backend/static; running from a checkout
 # it still lives at frontend/index.html. Serve whichever is present.
@@ -28,7 +32,7 @@ if not os.path.isfile(os.path.join(_STATIC_DIR, 'index.html')):
 
 app = Flask(__name__, static_folder=_STATIC_DIR, static_url_path='')
 app.config['SECRET_KEY'] = SECRET_KEY
-app.config['DATABASE'] = os.environ.get('DATABASE_PATH', '/data/calendar.db')
+app.config['DATABASE'] = DATABASE_PATH
 
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
