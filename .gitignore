@@ -3,6 +3,10 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 
+# Auto-generated JWT signing key — never commit this
+data/secret_key
+secret_key
+
 # Environment
 .env
 .env.*

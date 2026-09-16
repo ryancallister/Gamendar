@@ -7,10 +7,10 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/ryancallister/Gamendar/issues</Support>
   <Project>https://github.com/ryancallister/Gamendar</Project>
-  <Overview>Self-hosted team availability scheduler...</Overview>
+  <Overview>Self-hosted team availability scheduler. Users log in and mark which days they are available for each weekly event; admins manage users, create events and configure optional Discord and Signal notifications.&#13;&#13;Leave SECRET_KEY blank and a strong key is generated into the data volume on first start. Default login is admin / admin123 - change it immediately.</Overview>
   <Category>Productivity: Tools:</Category>
   <WebUI>http://[IP]:[PORT:5000]/</WebUI>
-  <Icon>https://raw.githubusercontent.com/ryancallister/Gamendar/main/icon.png</Icon>
+  <Icon>https://raw.githubusercontent.com/ryancallister/Gamendar/main/templates/icon.png</Icon>
 
   <Config Name="WebUI Port" Target="5000" Default="3005" Mode="tcp"
           Description="Host port for the web interface"
@@ -21,6 +21,6 @@
           Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/gamendar</Config>
 
   <Config Name="SECRET_KEY" Target="SECRET_KEY" Default="" Mode=""
-          Description="Leave blank to auto-generate one into the data volume."
+          Description="Optional. Leave blank and a strong key is generated into the data volume on first start. Set one only if you want to manage it yourself."
           Type="Variable" Display="always" Required="false" Mask="true"></Config>
 </Container>

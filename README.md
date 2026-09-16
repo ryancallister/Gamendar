@@ -67,7 +67,27 @@ Password: admin123
 
 ## Unraid Setup
 
-### Option A — Docker Compose (recommended)
+### Option A — Add Container with the template (recommended)
+
+No plugins beyond Community Applications, and nothing to configure to get started.
+
+1. Download [`templates/gamendar.xml`](templates/gamendar.xml)
+2. Unraid UI → **Docker** tab → **Add Container** → **Template** → **Import**, and upload the file
+
+   Or drop it straight onto the flash drive, where it appears under *User templates*:
+
+   ```bash
+   wget -O /boot/config/plugins/dockerMan/templates-user/my-Gamendar.xml \
+     https://raw.githubusercontent.com/ryancallister/Gamendar/main/templates/gamendar.xml
+   ```
+
+3. Adjust the port and appdata path if you like, leave **SECRET_KEY blank**, and hit **Apply**
+
+The blank key is deliberate — one is generated on first start and kept in the
+appdata folder. Then open the WebUI and sign in with `admin` / `admin123`,
+changing that password immediately.
+
+### Option B — Docker Compose
 
 1. Install the **Community Applications** plugin if not already installed
 2. Install the **Compose Manager Plus** plugin from Community Applications
@@ -78,12 +98,12 @@ cd /mnt/user/appdata
 git clone https://github.com/ryancallister/gamendar.git
 cd gamendar
 cp .env.example .env
-nano .env   # set SECRET_KEY and APP_PORT
+nano .env   # APP_PORT, and SECRET_KEY only if you want to set one yourself
 ```
 
 4. In the Unraid UI → **Compose Manager Plus** → point it at `/mnt/user/appdata/gamendar/docker-compose.yml` and start it.
 
-### Option B — Manual Docker run
+### Option C — Manual Docker run
 
 ```bash
 mkdir -p /mnt/user/appdata/gamendar/data
@@ -91,12 +111,13 @@ mkdir -p /mnt/user/appdata/gamendar/data
 docker run -d \
   --name gamendar \
   --restart unless-stopped \
-  -e SECRET_KEY=your-secret-key-here \
   -e DATABASE_PATH=/data/calendar.db \
   -p 3005:5000 \
   -v /mnt/user/appdata/gamendar/data:/data \
   ghcr.io/ryancallister/gamendar:latest
 ```
+
+Add `-e SECRET_KEY=...` only if you want to supply the key yourself.
 
 ### Unraid tips
 
@@ -124,10 +145,20 @@ The SQLite database in `./data/` is preserved across rebuilds.
 
 | Variable | Default | Description |
 |---|---|---|
-| `SECRET_KEY` | *(none — required)* | JWT signing secret. App refuses to start with the default value. |
+| `SECRET_KEY` | *(auto-generated)* | JWT signing secret. Leave unset and a strong key is generated on first start and stored in the data volume. |
+| `SECRET_KEY_FILE` | `<data dir>/secret_key` | Where the generated key is kept. Only needed to move it elsewhere. |
 | `APP_PORT` | `3005` | Host port the app listens on |
 | `FLASK_DEBUG` | `false` | Enable Flask debug mode (dev only) |
 | `DATABASE_PATH` | `/data/calendar.db` | Path to SQLite database inside container |
+
+**About `SECRET_KEY`:** it signs login tokens, so changing it logs everyone out.
+If you don't set one, the app generates 32 random bytes on first start and writes
+them to `secret_key` (mode `0600`) next to the database, which means sessions
+survive restarts and no two installs share a key. Set it explicitly only if you
+want to manage the secret yourself — for example to share sessions across hosts,
+or to keep it in a secrets manager. If a key can't be generated *and stored*, the
+app exits with an explanatory error rather than silently using a throwaway key
+that would log everyone out on every restart.
 
 ---
 
@@ -189,6 +220,9 @@ gamendar/
 ├── data/                     # SQLite DB — gitignored, created at runtime
 ├── .github/workflows/
 │   └── docker-build.yml      # Builds & pushes single image to ghcr.io on push to main
+├── templates/
+│   ├── gamendar.xml          # Unraid "Add Container" template
+│   └── icon.png
 ├── .dockerignore
 ├── .env.example
 ├── docker-compose.yml

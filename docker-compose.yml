@@ -6,7 +6,8 @@ services:
     container_name: gamendar
     restart: unless-stopped
     environment:
-      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      # Optional: leave unset and one is generated into ./data/secret_key
+      - SECRET_KEY=${SECRET_KEY:-}
       - DATABASE_PATH=/data/calendar.db
       - FLASK_DEBUG=${FLASK_DEBUG:-false}
     volumes:
