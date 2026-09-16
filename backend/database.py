@@ -56,6 +56,8 @@ def init_db(app):
                 date TEXT NOT NULL,
                 status TEXT NOT NULL DEFAULT 'available',
                 note TEXT,
+                start_time TEXT,
+                end_time TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, event_id, date),
                 FOREIGN KEY (user_id) REFERENCES users(id),
@@ -108,8 +110,10 @@ def init_db(app):
                 db.execute(f'ALTER TABLE {table} ADD COLUMN {column} {definition}')
                 print(f'Migration: added {table}.{column}')
 
-        _add_column_if_missing('users',  'signal_number', 'TEXT')
-        _add_column_if_missing('events', 'is_recurring',  'INTEGER NOT NULL DEFAULT 0')
+        _add_column_if_missing('users',        'signal_number', 'TEXT')
+        _add_column_if_missing('events',       'is_recurring',  'INTEGER NOT NULL DEFAULT 0')
+        _add_column_if_missing('availability', 'start_time',    'TEXT')
+        _add_column_if_missing('availability', 'end_time',      'TEXT')
         db.commit()
 
         # Create default admin if none exists

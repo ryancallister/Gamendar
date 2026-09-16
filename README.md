@@ -11,6 +11,8 @@ A self-hosted team availability scheduler. Users log in and mark which days they
 - **Weekly events** — admins create events with a date range; the newest event is shown front and centre, older ones are collapsible under "Previous events" (view-only)
 - **Per-day availability** — each user selects Available / Unavailable / Maybe for each day via a dropdown
 - **Optional notes** — users can attach a short note to any day (e.g. "After 8pm only")
+- **Optional times** — users can add a start/end time per day in "My week"; a range that ends before it starts is read as running past midnight (e.g. 9pm–1am)
+- **Time overlay** — the "Everyone" view charts everyone's times for a chosen day as blocks and highlights the window that works for all of them
 - **Live summary row** — shows how many active users are free each day, updates instantly
 - **Roles** — Admin (full access) and User (mark own availability only)
 - **JWT authentication** — sessions persist across browser refreshes; tokens are revoked on logout
@@ -227,10 +229,14 @@ All endpoints are under `/api/`. Protected routes require `Authorization: Bearer
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/availability/event/:id/set` | User | Set status + note for one day |
+| `POST` | `/api/availability/event/:id/set` | User | Set status, note and optional time for one day |
 | `POST` | `/api/availability/event/:id/bulk` | User | Set status for multiple days |
 | `GET` | `/api/availability/event/:id` | User | Get all availability for event |
 | `GET` | `/api/availability/my` | User | Current user's availability across all events |
+
+`set` and `bulk` take optional `start_time` / `end_time` as `"HH:MM"`. Send both or
+neither; send empty strings to clear. Every save overwrites `note`, `start_time` and
+`end_time`, so clients must resend the values they want to keep.
 
 ### Admin
 

@@ -353,6 +353,99 @@
   .af-note-btn:hover { color: var(--text2); background: var(--surface2); }
   .af-note-btn.has-note { color: var(--accent); border-color: rgba(108,142,245,0.4); background: var(--accent-glow); }
 
+  .af-time-btn {
+    height: 34px; padding: 0 9px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--bg); color: var(--text3);
+    font-size: 12px; font-family: var(--font); transition: all 0.12s; flex-shrink: 0;
+    display: flex; align-items: center; gap: 4px; white-space: nowrap;
+  }
+  .af-time-btn:hover { color: var(--text2); background: var(--surface2); }
+  .af-time-btn.has-time { color: var(--accent); border-color: rgba(108,142,245,0.4); background: var(--accent-glow); font-weight: 600; }
+  .af-time-btn .af-time-plus { font-size: 14px; line-height: 1; }
+
+  .af-time-row { padding: 0 0 10px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .af-time-row input[type="time"] {
+    background: var(--bg); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 7px 10px; color: var(--text); font-family: var(--font); font-size: 13px;
+    outline: none; color-scheme: dark;
+  }
+  .af-time-row input[type="time"]:focus { border-color: var(--accent); }
+  .af-time-row .af-time-sep { color: var(--text3); font-size: 13px; }
+  .af-time-row .af-time-clear {
+    margin-left: auto; background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 12px; font-family: var(--font); padding: 4px 6px;
+  }
+  .af-time-row .af-time-clear:hover { color: var(--red); }
+  .af-time-hint { flex-basis: 100%; font-size: 11px; color: var(--text3); }
+
+  /* ── Everyone: time-block overlay ────────────────────────── */
+  .detail-bottom {
+    display: flex; gap: 1.25rem; align-items: flex-start;
+    flex-wrap: wrap; margin-top: 1.5rem;
+  }
+  .detail-bottom > * { min-width: 0; }
+  .detail-bottom .mobile-notes-section { flex: 1.5 1 340px; }
+  .detail-bottom .mobile-notes-section:empty { display: none; }
+  .detail-bottom .times-panel { flex: 1 1 320px; }
+
+  .times-panel {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 1rem 1.15rem;
+  }
+  .times-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+  .times-days { display: flex; gap: 2px; flex-wrap: wrap; }
+  .times-day {
+    padding: 3px 7px; border-radius: 6px; border: 1px solid transparent;
+    background: transparent; color: var(--text3); font-size: 11px; font-weight: 600;
+    cursor: pointer; font-family: var(--font); position: relative;
+  }
+  .times-day:hover { color: var(--text2); background: var(--surface2); }
+  .times-day.active { background: var(--accent-glow); color: var(--accent); border-color: rgba(108,142,245,0.4); }
+  .times-day.has-times::after {
+    content: ''; position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%);
+    width: 3px; height: 3px; border-radius: 50%; background: var(--green);
+  }
+
+  .tl-row { display: grid; grid-template-columns: 78px 1fr; gap: 10px; align-items: center; margin-bottom: 6px; }
+  .tl-name { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); min-width: 0; }
+  .tl-name .mini-avatar {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--accent2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .tl-name .uname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-track {
+    position: relative; height: 26px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  }
+  .tl-block {
+    position: absolute; top: 2px; bottom: 2px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden;
+  }
+  .tl-block.available { background: rgba(62,207,142,0.28); color: var(--green); border: 1px solid rgba(62,207,142,0.5); }
+  .tl-block.maybe     { background: rgba(245,166,35,0.25); color: var(--amber); border: 1px solid rgba(245,166,35,0.5); }
+  .tl-overlap {
+    position: absolute; top: 0; bottom: 0; background: rgba(108,142,245,0.16);
+    border-left: 1px dashed rgba(108,142,245,0.7); border-right: 1px dashed rgba(108,142,245,0.7);
+    pointer-events: none;
+  }
+  .tl-axis { display: grid; grid-template-columns: 78px 1fr; gap: 10px; margin-top: 2px; }
+  .tl-ticks { position: relative; height: 15px; }
+  .tl-tick { position: absolute; top: 0; font-size: 10px; color: var(--text3); font-family: var(--mono); transform: translateX(-50%); white-space: nowrap; }
+  .tl-overlap-note {
+    margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text2);
+  }
+  .tl-overlap-note strong { color: var(--accent); }
+  .tl-overlap-note.none strong { color: var(--text3); }
+  .tl-empty { font-size: 13px; color: var(--text3); padding: 0.5rem 0 0.25rem; }
+
+  @media (max-width: 640px) {
+    .tl-row, .tl-axis { grid-template-columns: 62px 1fr; gap: 8px; }
+    .af-time-btn { font-size: 11px; padding: 0 7px; }
+  }
+
   .af-note-row { padding: 0 0 10px 0; }
   .af-note-row input {
     width: 100%; background: var(--bg); border: 1px solid var(--border2);
@@ -1004,6 +1097,7 @@ async function loadEvents() {
 }
 
 async function loadEventDetail(eventId, isPast = false) {
+  if (eventId !== currentEventId) timesDay = null;
   currentEventId = eventId;
   showPage('event-detail');
   document.getElementById('week-grid-wrap').innerHTML = '<div style="padding:3rem;text-align:center"><div class="spinner"></div></div>';
@@ -1064,6 +1158,8 @@ COMPACT_MQ.addEventListener('change', () => {
 let detailView = null;
 let lastGridData = null;
 let lastGridIsPast = false;
+let timesDay = null;   // which day the time overlay is showing
+let lastDayIsos = [];  // the current event's 7 day keys
 
 function switchDetailView(view) {
   setDetailView(view);
@@ -1086,7 +1182,7 @@ function setDetailView(view) {
   if (detailDirty) renderDetailViews();
   const formWrap = document.getElementById('avail-form-wrap');
   const gridWrap = document.getElementById('week-grid-wrap');
-  const notesSec = document.getElementById('mobile-notes-section');
+  const notesSec = document.getElementById('detail-bottom');
   const isForm = view === 'form';
 
   formWrap.style.display = isForm ? 'block' : 'none';
@@ -1111,7 +1207,7 @@ let lastDetailSig = '';
 
 function detailSignature(data) {
   const rows = (data.availability || [])
-    .map(a => `${a.user_id}:${a.date}:${a.status}:${a.note || ''}`)
+    .map(a => `${a.user_id}:${a.date}:${a.status}:${a.note || ''}:${a.start_time || ''}-${a.end_time || ''}`)
     .sort().join('|');
   const users = (data.users || []).map(u => u.id).sort().join(',');
   return `${users}#${rows}`;
@@ -1163,16 +1259,19 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // Record a save locally so both views stay correct without a round trip.
-function updateLocalAvailability(date, status, note) {
+function updateLocalAvailability(date, status, note, start = '', end = '') {
   if (!currentEventData) return;
   const rows = currentEventData.availability;
   const row = rows.find(a => a.user_id === currentUser.id && a.date === date);
   if (row) {
     row.status = status;
     row.note = note;
+    row.start_time = start || null;
+    row.end_time = end || null;
   } else {
     rows.push({ user_id: currentUser.id, username: currentUser.username,
-                event_id: currentEventId, date, status, note });
+                event_id: currentEventId, date, status, note,
+                start_time: start || null, end_time: end || null });
   }
   if (!liveAvailability[date]) liveAvailability[date] = {};
   liveAvailability[date][currentUser.id] = status;
@@ -1195,7 +1294,8 @@ function renderAvailForm(data, isPast = false) {
   const mine = {};
   for (const a of data.availability) {
     if (a.user_id === currentUser.id) {
-      mine[a.date] = { status: a.status, note: a.note || '' };
+      mine[a.date] = { status: a.status, note: a.note || '',
+                       start: a.start_time || '', end: a.end_time || '' };
     }
   }
 
@@ -1213,14 +1313,22 @@ function renderAvailForm(data, isPast = false) {
 
   const rows = formDays.map(iso => {
     const d = new Date(iso + 'T00:00:00');
-    const cur  = mine[iso]?.status || '';
-    const note = mine[iso]?.note || '';
+    const cur   = mine[iso]?.status || '';
+    const note  = mine[iso]?.note || '';
+    const start = mine[iso]?.start || '';
+    const end   = mine[iso]?.end || '';
+    const hasTime = !!(start && end);
     const mk = (val, sym, label) =>
       `<button class="af-choice ${cur===val ? 'sel-'+val : ''}" title="${label}"
          onclick="formSetStatus('${iso}', '${val}')">${sym}</button>`;
     return `
       <div class="af-day${iso===today?' today':''}" id="af-day-${iso}">
         <div class="af-day-label">${dayNames[d.getDay()]}<span class="af-daynum">${d.getDate()}</span></div>
+        <button class="af-time-btn ${hasTime ? 'has-time' : ''}" id="af-timebtn-${iso}"
+          title="${hasTime ? 'Change the time you\'re free' : 'Add a time (optional)'}"
+          onclick="formToggleTime('${iso}')">${hasTime
+            ? fmtRangeShort(start, end)
+            : '<span class="af-time-plus">+</span> Time'}</button>
         <div class="af-choices">
           ${mk('available','✓','Available')}
           ${mk('maybe','~','Maybe')}
@@ -1228,6 +1336,15 @@ function renderAvailForm(data, isPast = false) {
         </div>
         <button class="af-note-btn ${note ? 'has-note' : ''}" title="${note ? esc(note) : 'Add a note'}"
           onclick="formToggleNote('${iso}')">🗨</button>
+      </div>
+      <div class="af-time-row" id="af-time-${iso}" style="display:${hasTime ? 'flex' : 'none'}">
+        <input type="time" id="af-start-${iso}" value="${esc(start)}" aria-label="Free from"
+          onchange="formSaveTime('${iso}')">
+        <span class="af-time-sep">to</span>
+        <input type="time" id="af-end-${iso}" value="${esc(end)}" aria-label="Free until"
+          onchange="formSaveTime('${iso}')">
+        <button class="af-time-clear" onclick="formClearTime('${iso}')">Clear</button>
+        <div class="af-time-hint">Optional — leave blank if you're free any time that day.</div>
       </div>
       <div class="af-note-row" id="af-note-${iso}" style="display:${note ? 'block' : 'none'}">
         <input type="text" maxlength="60" placeholder="e.g. Free after 7pm" value="${esc(note)}"
@@ -1279,16 +1396,20 @@ async function formSetStatus(iso, status) {
   }
   formUpdateProgress();
 
-  // The API overwrites note on every save, so resend the one already there.
+  // The API overwrites note and times on every save, so resend what's there.
   const note = formCurrentNote(iso);
   const saved = clearing ? 'unavailable' : status;
+  const start = document.getElementById(`af-start-${iso}`)?.value || '';
+  const end   = document.getElementById(`af-end-${iso}`)?.value || '';
+  const keep  = start && end && start !== end;
 
   try {
     await api(`/availability/event/${currentEventId}/set`, {
       method: 'POST',
-      body: JSON.stringify({ date: iso, status: saved, note })
+      body: JSON.stringify({ date: iso, status: saved, note,
+                             start_time: keep ? start : '', end_time: keep ? end : '' })
     });
-    updateLocalAvailability(iso, saved, note);
+    updateLocalAvailability(iso, saved, note, keep ? start : '', keep ? end : '');
   } catch(e) {
     toast('Failed to save: ' + e.message);
   }
@@ -1297,6 +1418,103 @@ async function formSetStatus(iso, status) {
 function formCurrentNote(iso) {
   const input = document.querySelector(`#af-note-${iso} input`);
   return input ? input.value.trim().slice(0, 60) : '';
+}
+
+// ─── TIME HELPERS ────────────────────────────────────────────────
+// Times are stored as 'HH:MM'. An end at or before the start means the
+// session runs past midnight, so end-minutes get a day added.
+function toMinutes(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
+  return m ? (+m[1]) * 60 + (+m[2]) : null;
+}
+
+function fmtTime(mins) {
+  const m = ((mins % 1440) + 1440) % 1440;
+  const h24 = Math.floor(m / 60), min = m % 60;
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${String(min).padStart(2,'0')} ${h24 < 12 ? 'AM' : 'PM'}`;
+}
+
+// Compact form for the button: "7p–11p", "7:30p–1a"
+function fmtShort(mins) {
+  const m = ((mins % 1440) + 1440) % 1440;
+  const h24 = Math.floor(m / 60), min = m % 60;
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}${min ? ':' + String(min).padStart(2,'0') : ''}${h24 < 12 ? 'a' : 'p'}`;
+}
+
+function fmtRangeShort(start, end) {
+  const s = toMinutes(start), e = toMinutes(end);
+  if (s === null || e === null) return '';
+  return `${fmtShort(s)}–${fmtShort(e)}`;
+}
+
+// End of the block in minutes, rolled past midnight when it wraps
+function rangeEndMinutes(startMin, endMin) {
+  return endMin <= startMin ? endMin + 1440 : endMin;
+}
+
+function formToggleTime(iso) {
+  const row = document.getElementById(`af-time-${iso}`);
+  if (!row) return;
+  const showing = row.style.display !== 'none';
+  row.style.display = showing ? 'none' : 'flex';
+  if (!showing) document.getElementById(`af-start-${iso}`)?.focus();
+}
+
+function formDayStatus(iso) {
+  const sel = document.getElementById(`af-day-${iso}`)?.querySelector('.af-choice[class*="sel-"]');
+  return sel ? sel.className.match(/sel-(\w+)/)[1] : '';
+}
+
+async function formSaveTime(iso) {
+  const start = document.getElementById(`af-start-${iso}`)?.value || '';
+  const end   = document.getElementById(`af-end-${iso}`)?.value || '';
+
+  // Half-filled is a normal in-between state while picking — wait for both.
+  if (!start || !end) return;
+  if (start === end) { toast('Start and end time must differ'); return; }
+
+  const status = formDayStatus(iso);
+  if (!status) { toast('Pick a status for that day first'); return; }
+
+  await saveDay(iso, status, formCurrentNote(iso), start, end,
+                `Free ${fmtRangeShort(start, end)}`);
+}
+
+async function formClearTime(iso) {
+  const startEl = document.getElementById(`af-start-${iso}`);
+  const endEl   = document.getElementById(`af-end-${iso}`);
+  if (startEl) startEl.value = '';
+  if (endEl) endEl.value = '';
+
+  const status = formDayStatus(iso);
+  if (!status) { document.getElementById(`af-time-${iso}`).style.display = 'none'; return; }
+  await saveDay(iso, status, formCurrentNote(iso), '', '', 'Time cleared');
+}
+
+// One save path for the form's status / note / time edits.
+async function saveDay(iso, status, note, start, end, okMsg) {
+  try {
+    await api(`/availability/event/${currentEventId}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ date: iso, status, note, start_time: start, end_time: end })
+    });
+    updateLocalAvailability(iso, status, note, start, end);
+    refreshTimeButton(iso, start, end);
+    if (okMsg) toast(okMsg);
+  } catch(e) {
+    toast('Failed to save: ' + e.message);
+  }
+}
+
+function refreshTimeButton(iso, start, end) {
+  const btn = document.getElementById(`af-timebtn-${iso}`);
+  if (!btn) return;
+  const has = !!(start && end);
+  btn.classList.toggle('has-time', has);
+  btn.innerHTML = has ? fmtRangeShort(start, end) : '<span class="af-time-plus">+</span> Time';
+  btn.title = has ? "Change the time you're free" : 'Add a time (optional)';
 }
 
 function formToggleNote(iso) {
@@ -1319,11 +1537,15 @@ async function formSaveNote(iso, value) {
   if (btn) btn.classList.toggle('has-note', !!note);
 
   try {
+    const start = document.getElementById(`af-start-${iso}`)?.value || '';
+    const end   = document.getElementById(`af-end-${iso}`)?.value || '';
+    const keep  = start && end && start !== end;
     await api(`/availability/event/${currentEventId}/set`, {
       method: 'POST',
-      body: JSON.stringify({ date: iso, status, note })
+      body: JSON.stringify({ date: iso, status, note,
+                             start_time: keep ? start : '', end_time: keep ? end : '' })
     });
-    updateLocalAvailability(iso, status, note);
+    updateLocalAvailability(iso, status, note, keep ? start : '', keep ? end : '');
   } catch(e) {
     toast('Failed to save note: ' + e.message);
   }
@@ -1362,12 +1584,16 @@ async function formCopyLastWeek(eventId) {
     // Map by weekday so the dates line up with this week
     const byDow = {};
     for (const a of prevMine) {
-      byDow[new Date(a.date + 'T00:00:00').getDay()] = { status: a.status, note: a.note || '' };
+      byDow[new Date(a.date + 'T00:00:00').getDay()] = {
+        status: a.status, note: a.note || '',
+        start_time: a.start_time || '', end_time: a.end_time || ''
+      };
     }
 
     const entries = formDays.map(date => {
       const src = byDow[new Date(date + 'T00:00:00').getDay()];
-      return src ? { date, status: src.status, note: src.note } : null;
+      return src ? { date, status: src.status, note: src.note,
+                     start_time: src.start_time, end_time: src.end_time } : null;
     }).filter(Boolean);
 
     if (!entries.length) { toast('Nothing to copy'); return; }
@@ -1529,11 +1755,22 @@ function renderWeekGrid(data, isPast = false) {
     notesHtml = '<div class="mobile-notes-section" id="mobile-notes-section"></div>';
   }
 
+  // Default the overlay to today when today is in this week, else day one
+  const dayIsos = days.map(d => d.toISOString().slice(0,10));
+  lastDayIsos = dayIsos;
+  if (!timesDay || !dayIsos.includes(timesDay)) {
+    timesDay = dayIsos.includes(today) ? today : dayIsos[0];
+  }
+  const bottomHtml = `<div class="detail-bottom" id="detail-bottom">
+      ${notesHtml}
+      ${buildTimesPanel(users, availability, dayIsos, dayNames)}
+    </div>`;
+
   document.getElementById('week-grid-wrap').innerHTML = html;
-  // Append mobile notes section after grid wrap
-  const existingNotes = document.getElementById('mobile-notes-section');
-  if (existingNotes) existingNotes.remove();
-  document.getElementById('week-grid-wrap').insertAdjacentHTML('afterend', notesHtml);
+  // Append the notes + times row after the grid
+  const existingBottom = document.getElementById('detail-bottom');
+  if (existingBottom) existingBottom.remove();
+  document.getElementById('week-grid-wrap').insertAdjacentHTML('afterend', bottomHtml);
 
   // Scroll hint on mobile: auto-scroll to show today's column if possible
   const wrap = document.getElementById('week-grid-wrap');
@@ -1541,6 +1778,132 @@ function renderWeekGrid(data, isPast = false) {
   if (todayHeader && wrap.scrollWidth > wrap.clientWidth) {
     todayHeader.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }
+}
+
+// ─── EVERYONE: TIME-BLOCK OVERLAY ────────────────────────────────
+const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function fmtDur(mins) {
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+}
+
+function setTimesDay(iso) {
+  timesDay = iso;
+  const panel = document.getElementById('times-panel');
+  if (!panel || !currentEventData) return;
+  panel.outerHTML = buildTimesPanel(currentEventData.users, currentEventData.availability,
+                                    lastDayIsos, DAY_ABBR);
+}
+
+function buildTimesPanel(users, availability, dayIsos, dayNames) {
+  const byUser = new Map(users.map(u => [u.id, u]));
+  const timed = a => a.start_time && a.end_time &&
+                     (a.status === 'available' || a.status === 'maybe');
+
+  const blocks = availability
+    .filter(a => a.date === timesDay && timed(a) && byUser.has(a.user_id))
+    .map(a => {
+      const start = toMinutes(a.start_time), rawEnd = toMinutes(a.end_time);
+      if (start === null || rawEnd === null) return null;
+      return { username: byUser.get(a.user_id).username, status: a.status,
+               start, end: rangeEndMinutes(start, rawEnd) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+
+  // People free that day who didn't give a time — they're not on the chart,
+  // so say so rather than letting the overlap read as the whole picture.
+  const untimed = availability.filter(a =>
+    a.date === timesDay && !timed(a) && byUser.has(a.user_id) &&
+    (a.status === 'available' || a.status === 'maybe')).length;
+  const untimedNote = untimed
+    ? ` · <span style="color:var(--text3)">${untimed} more free, no time given</span>` : '';
+
+  const daysWithTimes = new Set(availability.filter(timed).map(a => a.date));
+  const chips = dayIsos.map(iso => {
+    const d = new Date(iso + 'T00:00:00');
+    return `<button class="times-day${iso === timesDay ? ' active' : ''}${daysWithTimes.has(iso) ? ' has-times' : ''}"
+      onclick="setTimesDay('${iso}')" title="${fmtDateShort(iso)}">${dayNames[d.getDay()]}</button>`;
+  }).join('');
+
+  const head = `<div class="times-head">
+      <p class="section-title" style="margin-bottom:0">🕐 Times — ${fmtDateShort(timesDay)}</p>
+      <div class="times-days">${chips}</div>
+    </div>`;
+
+  if (!blocks.length) {
+    const freeNote = untimed
+      ? `<div class="tl-empty">${untimed} ${untimed === 1 ? 'person is' : 'people are'} free this day but haven't given a time — add yours under <strong>My week</strong>.</div>`
+      : `<div class="tl-empty">Nobody has set a time for this day yet — add one under <strong>My week</strong>.</div>`;
+    return `<div class="times-panel" id="times-panel">${head}${freeNote}</div>`;
+  }
+
+  // Axis window: whole hours around the blocks, at least 4h wide
+  const lo = Math.floor(Math.min(...blocks.map(b => b.start)) / 60) * 60;
+  let hi = Math.ceil(Math.max(...blocks.map(b => b.end)) / 60) * 60;
+  if (hi - lo < 240) hi = lo + 240;
+  const span = hi - lo;
+  const pct = m => ((m - lo) / span) * 100;
+
+  // The overlay proper: the window that works for everyone shown
+  const olStart = Math.max(...blocks.map(b => b.start));
+  const olEnd   = Math.min(...blocks.map(b => b.end));
+  const hasOverlap = blocks.length > 1 && olEnd > olStart;
+  const band = hasOverlap
+    ? `<div class="tl-overlap" style="left:${pct(olStart)}%;width:${pct(olEnd) - pct(olStart)}%"></div>`
+    : '';
+
+  const rows = blocks.map(b => `
+    <div class="tl-row">
+      <div class="tl-name">
+        <div class="mini-avatar">${esc(b.username[0].toUpperCase())}</div>
+        <span class="uname">${esc(b.username)}</span>
+      </div>
+      <div class="tl-track">${band}
+        <div class="tl-block ${b.status}"
+             style="left:${pct(b.start)}%;width:${pct(b.end) - pct(b.start)}%"
+             title="${esc(b.username)}: ${fmtTime(b.start)} – ${fmtTime(b.end)}${b.end >= 1440 ? ' (next day)' : ''}">
+          ${fmtShort(b.start)}–${fmtShort(b.end)}
+        </div>
+      </div>
+    </div>`).join('');
+
+  let step = 60;
+  if (span > 300) step = 120;
+  if (span > 600) step = 180;
+  const tickAt = [];
+  for (let m = lo; m <= hi; m += step) tickAt.push(m);
+  // The step rarely lands exactly on the end, so label it explicitly —
+  // otherwise a block can run to an edge with no time against it.
+  const last = tickAt[tickAt.length - 1];
+  if (last < hi) {
+    if (hi - last < step / 2) tickAt[tickAt.length - 1] = hi;
+    else tickAt.push(hi);
+  }
+  const ticks = tickAt.map(m => {
+    const at = pct(m);
+    // Keep the end labels inside the track instead of half off it
+    const shift = at <= 0.5 ? 'translateX(0)' : (at >= 99.5 ? 'translateX(-100%)' : 'translateX(-50%)');
+    return `<div class="tl-tick" style="left:${at}%;transform:${shift}">${fmtShort(m)}</div>`;
+  }).join('');
+
+  let note;
+  if (blocks.length === 1) {
+    note = `<div class="tl-overlap-note none">Only <strong>${esc(blocks[0].username)}</strong> has given a time${untimedNote}</div>`;
+  } else if (hasOverlap) {
+    note = `<div class="tl-overlap-note">All ${blocks.length} overlap
+      <strong>${fmtTime(olStart)} – ${fmtTime(olEnd)}</strong> (${fmtDur(olEnd - olStart)})${untimedNote}</div>`;
+  } else {
+    note = `<div class="tl-overlap-note none">No window works for <strong>all ${blocks.length}</strong> on this day${untimedNote}</div>`;
+  }
+
+  return `<div class="times-panel" id="times-panel">
+    ${head}
+    ${rows}
+    <div class="tl-axis"><div></div><div class="tl-ticks">${ticks}</div></div>
+    ${note}
+  </div>`;
 }
 
 async function setAvailability(selectEl, eventId, date) {
@@ -1558,13 +1921,15 @@ async function setAvailability(selectEl, eventId, date) {
   const existing = (currentEventData?.availability || [])
     .find(a => a.user_id === currentUser.id && a.date === date);
   const note = existing?.note || '';
+  const start = existing?.start_time || '';
+  const end = existing?.end_time || '';
 
   try {
     await api(`/availability/event/${eventId}/set`, {
       method: 'POST',
-      body: JSON.stringify({ date, status, note })
+      body: JSON.stringify({ date, status, note, start_time: start, end_time: end })
     });
-    updateLocalAvailability(date, status, note);
+    updateLocalAvailability(date, status, note, start, end);
     updateSummaryRow();
   } catch(e) {
     selectEl.className = prevClass;
