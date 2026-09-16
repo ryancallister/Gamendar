@@ -16,9 +16,9 @@
           Description="Host port for the web interface"
           Type="Port" Display="always" Required="true" Mask="false">3005</Config>
 
-  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/gamendar" Mode="rw"
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/gamendar/data" Mode="rw"
           Description="SQLite database lives here"
-          Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/gamendar</Config>
+          Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/gamendar/data</Config>
 
   <Config Name="SECRET_KEY" Target="SECRET_KEY" Default="" Mode=""
           Description="Optional. Leave blank and a strong key is generated into the data volume on first start. Set one only if you want to manage it yourself."
