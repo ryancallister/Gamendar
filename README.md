@@ -5,7 +5,8 @@ A self-hosted team availability scheduler. Users log in and mark which days they
 **Stack:** Python/Flask · SQLite · Docker · Single-page HTML frontend
 
 ---
-
+## Warning
+This is 99% **AI Generated/Vibe Coded**. I made this for use with my friends as a side project. Feel free to use if you would like but just wanted to be clear that AI was used for a majority of this project.
 ## Features
 
 - **Weekly events** — admins create events with a date range; the newest event is shown front and centre, older ones are collapsible under "Previous events" (view-only)
