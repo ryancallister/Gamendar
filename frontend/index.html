@@ -246,7 +246,6 @@
   .avail-pill.available { background: var(--green-bg); color: var(--green); }
   .avail-pill.unavailable { background: var(--red-bg); color: var(--red); }
   .avail-pill.maybe { background: var(--amber-bg); color: var(--amber); }
-  .avail-pill.empty { background: var(--surface3); color: var(--text3); }
 
   .avail-pill-label {
     width: 100%; border-radius: 7px; padding: 0;
@@ -261,7 +260,209 @@
   .avail-pill-label.available { background: var(--green-bg); color: var(--green); }
   .avail-pill-label.unavailable { background: var(--red-bg); color: var(--red); }
   .avail-pill-label.maybe { background: var(--amber-bg); color: var(--amber); }
-  .avail-pill-label.empty { background: var(--surface3); color: var(--text3); }
+
+  /* ── View toggle ─────────────────────────────────────────── */
+  .view-toggle { display: flex; gap: 2px; background: var(--bg); border-radius: 8px; padding: 3px; border: 1px solid var(--border2); }
+  .view-toggle-btn {
+    padding: 5px 12px; border-radius: 6px; border: none; background: none; cursor: pointer;
+    font-family: var(--font); font-size: 13px; font-weight: 500; color: var(--text2);
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .view-toggle-btn:hover { color: var(--text); }
+  .view-toggle-btn.active { background: var(--surface2); color: var(--text); }
+
+  /* ── Compact grid pills (icon only) ──────────────────────── */
+  .avail-pill-compact {
+    height: 30px; padding: 0 10px; border-radius: 15px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    font-size: 13px; font-weight: 500; flex-shrink: 0; white-space: nowrap;
+    background: var(--surface3); color: var(--text3);
+    max-width: 100%; overflow: hidden;
+  }
+  .avail-pill-compact.icon-only {
+    width: 30px; padding: 0; border-radius: 50%;
+    font-size: 15px; font-weight: 600;
+  }
+  .avail-pill-compact.available   { background: var(--green-bg); color: var(--green); }
+  .avail-pill-compact.unavailable { background: var(--red-bg);   color: var(--red); }
+  .avail-pill-compact.maybe       { background: var(--amber-bg); color: var(--amber); }
+  .avail-pill-compact.st-none     { background: var(--surface3); color: var(--text3); }
+
+  .avail-select-compact {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 7px; padding: 4px 6px; font-family: var(--font); font-size: 13px;
+    font-weight: 500; outline: none; cursor: pointer; text-align: center;
+    height: 30px; box-sizing: border-box; transition: all 0.15s;
+  }
+  .avail-select-compact.icon-only {
+    max-width: 62px; font-size: 15px; font-weight: 600; padding: 4px 2px;
+  }
+  .avail-select-compact:focus { border-color: var(--accent); }
+  .avail-select-compact.available   { background: var(--green-bg); color: var(--green); border-color: rgba(62,207,142,0.3); }
+  .avail-select-compact.unavailable { background: var(--red-bg);   color: var(--red);   border-color: rgba(240,107,107,0.3); }
+  .avail-select-compact.maybe       { background: var(--amber-bg); color: var(--amber); border-color: rgba(245,166,35,0.3); }
+  .avail-select-compact.st-none     { background: var(--bg); color: var(--text2); }
+  .avail-select-compact option { background: #1a1f2e; color: #eef0f6; font-size: 13px; }
+
+  .note-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); margin-left: 3px; cursor: pointer; flex-shrink: 0;
+  }
+
+  /* ── Availability entry form ─────────────────────────────── */
+  .af-card {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg);
+    padding: 1.5rem; max-width: 560px;
+  }
+  .af-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+  .af-header h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
+  .af-header .af-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .af-progress { font-size: 13px; color: var(--text2); white-space: nowrap; }
+  .af-progress strong { color: var(--accent); }
+
+  .af-quick { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+  .af-quick .btn { flex: 1; }
+
+  .af-day {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .af-day:last-of-type { border-bottom: none; }
+  .af-day-label { flex: 1; font-size: 15px; font-weight: 600; }
+  .af-day-label .af-daynum { color: var(--text2); font-weight: 400; margin-left: 4px; }
+  .af-day.today .af-day-label { color: var(--accent); }
+
+  .af-choices { display: flex; gap: 4px; }
+  .af-choice {
+    width: 38px; height: 34px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--bg); color: var(--text3);
+    font-size: 15px; font-weight: 600; transition: all 0.12s;
+    display: flex; align-items: center; justify-content: center; font-family: var(--font);
+  }
+  .af-choice:hover { border-color: var(--border2); background: var(--surface2); color: var(--text2); }
+  .af-choice.sel-available   { background: var(--green-bg); color: var(--green); border-color: rgba(62,207,142,0.4); }
+  .af-choice.sel-unavailable { background: var(--red-bg);   color: var(--red);   border-color: rgba(240,107,107,0.4); }
+  .af-choice.sel-maybe       { background: var(--amber-bg); color: var(--amber); border-color: rgba(245,166,35,0.4); }
+
+  .af-note-btn {
+    width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--bg); color: var(--text3);
+    font-size: 13px; transition: all 0.12s; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .af-note-btn:hover { color: var(--text2); background: var(--surface2); }
+  .af-note-btn.has-note { color: var(--accent); border-color: rgba(108,142,245,0.4); background: var(--accent-glow); }
+
+  .af-time-btn {
+    height: 34px; padding: 0 9px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--bg); color: var(--text3);
+    font-size: 12px; font-family: var(--font); transition: all 0.12s; flex-shrink: 0;
+    display: flex; align-items: center; gap: 4px; white-space: nowrap;
+  }
+  .af-time-btn:hover { color: var(--text2); background: var(--surface2); }
+  .af-time-btn.has-time { color: var(--accent); border-color: rgba(108,142,245,0.4); background: var(--accent-glow); font-weight: 600; }
+  .af-time-btn .af-time-plus { font-size: 14px; line-height: 1; }
+
+  .af-time-row { padding: 0 0 10px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .af-time-row input[type="time"] {
+    background: var(--bg); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 7px 10px; color: var(--text); font-family: var(--font); font-size: 13px;
+    outline: none; color-scheme: dark;
+  }
+  .af-time-row input[type="time"]:focus { border-color: var(--accent); }
+  .af-time-row .af-time-sep { color: var(--text3); font-size: 13px; }
+  .af-time-row .af-time-clear {
+    margin-left: auto; background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 12px; font-family: var(--font); padding: 4px 6px;
+  }
+  .af-time-row .af-time-clear:hover { color: var(--red); }
+  .af-time-hint { flex-basis: 100%; font-size: 11px; color: var(--text3); }
+
+  /* ── Everyone: time-block overlay ────────────────────────── */
+  .detail-bottom {
+    display: flex; gap: 1.25rem; align-items: flex-start;
+    flex-wrap: wrap; margin-top: 1.5rem;
+  }
+  .detail-bottom > * { min-width: 0; }
+  .detail-bottom .mobile-notes-section { flex: 1.5 1 340px; }
+  .detail-bottom .mobile-notes-section:empty { display: none; }
+  .detail-bottom .times-panel { flex: 1 1 320px; }
+
+  .times-panel {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 1rem 1.15rem;
+  }
+  .times-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+  .times-days { display: flex; gap: 2px; flex-wrap: wrap; }
+  .times-day {
+    padding: 3px 7px; border-radius: 6px; border: 1px solid transparent;
+    background: transparent; color: var(--text3); font-size: 11px; font-weight: 600;
+    cursor: pointer; font-family: var(--font); position: relative;
+  }
+  .times-day:hover { color: var(--text2); background: var(--surface2); }
+  .times-day.active { background: var(--accent-glow); color: var(--accent); border-color: rgba(108,142,245,0.4); }
+  .times-day.has-times::after {
+    content: ''; position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%);
+    width: 3px; height: 3px; border-radius: 50%; background: var(--green);
+  }
+
+  .tl-row { display: grid; grid-template-columns: 78px 1fr; gap: 10px; align-items: center; margin-bottom: 6px; }
+  .tl-name { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); min-width: 0; }
+  .tl-name .mini-avatar {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--accent2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .tl-name .uname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-track {
+    position: relative; height: 26px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  }
+  .tl-block {
+    position: absolute; top: 2px; bottom: 2px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden;
+  }
+  .tl-block.available { background: rgba(62,207,142,0.28); color: var(--green); border: 1px solid rgba(62,207,142,0.5); }
+  .tl-block.maybe     { background: rgba(245,166,35,0.25); color: var(--amber); border: 1px solid rgba(245,166,35,0.5); }
+  .tl-overlap {
+    position: absolute; top: 0; bottom: 0; background: rgba(108,142,245,0.16);
+    border-left: 1px dashed rgba(108,142,245,0.7); border-right: 1px dashed rgba(108,142,245,0.7);
+    pointer-events: none;
+  }
+  .tl-axis { display: grid; grid-template-columns: 78px 1fr; gap: 10px; margin-top: 2px; }
+  .tl-ticks { position: relative; height: 15px; }
+  .tl-tick { position: absolute; top: 0; font-size: 10px; color: var(--text3); font-family: var(--mono); transform: translateX(-50%); white-space: nowrap; }
+  .tl-overlap-note {
+    margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text2);
+  }
+  .tl-overlap-note strong { color: var(--accent); }
+  .tl-overlap-note.none strong { color: var(--text3); }
+  .tl-empty { font-size: 13px; color: var(--text3); padding: 0.5rem 0 0.25rem; }
+
+  @media (max-width: 640px) {
+    .tl-row, .tl-axis { grid-template-columns: 62px 1fr; gap: 8px; }
+    .af-time-btn { font-size: 11px; padding: 0 7px; }
+  }
+
+  .af-note-row { padding: 0 0 10px 0; }
+  .af-note-row input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 8px 12px; color: var(--text);
+    font-family: var(--font); font-size: 13px; outline: none;
+  }
+  .af-note-row input:focus { border-color: var(--accent); }
+  .af-footer { text-align: center; font-size: 12px; color: var(--text3); margin-top: 1rem; }
+
+  @media (max-width: 640px) {
+    .af-card { padding: 1.1rem; border-radius: var(--radius); }
+    .af-header h3 { font-size: 17px; }
+    .af-choice { width: 42px; height: 36px; }
+    .af-note-btn { width: 36px; height: 36px; }
+    .af-day-label { font-size: 14px; }
+    .view-toggle-btn { padding: 5px 9px; font-size: 12px; }
+  }
 
   .avail-select {
     width: 100%; background: var(--bg); border: 1px solid var(--border2);
@@ -273,7 +474,6 @@
   .avail-select.available { background: var(--green-bg); color: var(--green); border-color: rgba(62,207,142,0.3); }
   .avail-select.unavailable { background: var(--red-bg); color: var(--red); border-color: rgba(240,107,107,0.3); }
   .avail-select.maybe { background: var(--amber-bg); color: var(--amber); border-color: rgba(245,166,35,0.3); }
-  .avail-select.empty { background: var(--bg); color: var(--text2); border-color: var(--border2); }
   .avail-select option { background: #1a1f2e; color: #eef0f6; }
   .avail-select option.opt-available { color: #3ecf8e; }
   .avail-select option.opt-unavailable { color: #f06b6b; }
@@ -315,6 +515,7 @@
     grid-template-columns: 140px repeat(7, 1fr);
     border-top: 2px solid var(--border2);
     background: var(--surface);
+    border-radius: 8px;
   }
 
   .summary-cell {
@@ -391,9 +592,9 @@
   #toast.show { transform: translateX(-50%) translateY(0); }
 
   /* EMPTY STATE */
-  .empty { text-align: center; padding: 4rem 2rem; color: var(--text2); }
-  .empty .icon { font-size: 48px; margin-bottom: 1rem; opacity: 0.3; }
-  .empty h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text2); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 1rem; opacity: 0.3; }
+  .empty-state h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
 
   .spinner { width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -430,9 +631,16 @@
   .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--text2); font-size: 14px; margin-bottom: 1.25rem; cursor: pointer; border: none; background: none; font-family: var(--font); padding: 0; transition: color 0.15s; }
   .back-btn:hover { color: var(--text); }
 
-  .mobile-notes-section { display: none; }
+  .notes-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+  .notes-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border2); }
+  .notes-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+  .notes-table tr:last-child td { border-bottom: none; }
+  .notes-table tr.highlight td { background: var(--accent-glow); }
+  .notes-table tr { transition: background 0.3s; }
+
+  .mobile-notes-section { display: block; max-width: 720px; }
   @media (max-width: 640px) {
-    .mobile-notes-section { display: block; margin-top: 1.5rem; }
+    .mobile-notes-section { margin-top: 1.5rem; }
     .topbar { padding: 0 0.75rem; gap: 0.4rem; height: 48px; }
     .topbar-logo { font-size: 14px; }
     .topbar-logo .dot { width: 6px; height: 6px; }
@@ -474,12 +682,6 @@
     .legend-item { font-size: 12px; }
     .note-link { font-size: 11px; color: var(--accent); cursor: pointer; text-decoration: underline; display: block; text-align: center; margin-top: 2px; white-space: nowrap; }
     .avail-note-text { display: none; }
-    .notes-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
-    .notes-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border2); }
-    .notes-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
-    .notes-table tr:last-child td { border-bottom: none; }
-    .notes-table tr.highlight td { background: var(--accent-glow); }
-    .notes-table tr { transition: background 0.3s; }
   }
 </style>
 </head>
@@ -548,14 +750,18 @@
         <div style="display:flex;gap:8px;" id="detail-admin-btns"></div>
       </div>
 
-      <div class="legend">
+      <div class="legend" id="detail-legend">
         <div class="legend-item"><div class="legend-dot green"></div>Available</div>
         <div class="legend-item"><div class="legend-dot amber"></div>Maybe</div>
         <div class="legend-item"><div class="legend-dot red"></div>Unavailable</div>
         <div class="legend-item"><div class="legend-dot gray"></div>No response</div>
-
+        <div class="view-toggle" id="view-toggle" style="margin-left:auto">
+          <button class="view-toggle-btn" id="vt-form" onclick="switchDetailView('form')">📝 My week</button>
+          <button class="view-toggle-btn" id="vt-grid" onclick="switchDetailView('grid')">📊 Everyone</button>
+        </div>
       </div>
 
+      <div id="avail-form-wrap"></div>
       <div id="week-grid-wrap"></div>
     </div>
 
@@ -567,9 +773,55 @@
       </div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th></th></tr></thead>
+          <thead><tr><th>User</th><th>Email</th><th>Signal</th><th>Role</th><th>Status</th><th></th></tr></thead>
           <tbody id="users-tbody"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
         </table>
+      </div>
+
+      <div style="margin-top:2.5rem">
+        <div class="page-header" style="margin-bottom:1.25rem">
+          <div><h2>Recurring Events</h2><p>Automatically create a new weekly event on a schedule</p></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="recurring-status-badge"></span>
+            <button class="btn btn-ghost btn-sm" onclick="createRecurringNow()">Create next week now</button>
+            <button class="btn btn-primary btn-sm" onclick="saveRecurringSettings()" style="width:auto">Save</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="padding:1.5rem">
+          <div id="recurring-settings-error"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <div class="form-group">
+              <label>Create on</label>
+              <select id="rc-day">
+                <option value="0">Monday</option><option value="1">Tuesday</option>
+                <option value="2">Wednesday</option><option value="3">Thursday</option>
+                <option value="4">Friday</option><option value="5">Saturday</option>
+                <option value="6">Sunday</option>
+              </select>
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">Creates the event for the <em>following</em> Mon–Sun week</div>
+            </div>
+            <div class="form-group">
+              <label>At time <span style="color:var(--text3);font-size:12px">(server local, 24h)</span></label>
+              <input type="time" id="rc-time" value="09:00">
+            </div>
+            <div class="form-group">
+              <label>Event title</label>
+              <input type="text" id="rc-title" placeholder="Week of {week_start}">
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">Supports <code>{week_start}</code> and <code>{week_end}</code></div>
+            </div>
+            <div class="form-group">
+              <label>Description <span style="color:var(--text3);font-size:12px">(optional)</span></label>
+              <input type="text" id="rc-description" placeholder="Weekly availability">
+            </div>
+          </div>
+          <div style="margin-top:0.5rem">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="rc-enabled" style="width:18px;height:18px;accent-color:var(--accent)">
+              <span>Enable automatic weekly event creation</span>
+            </label>
+          </div>
+          <div style="margin-top:1rem;font-size:13px;color:var(--text2)" id="rc-last-run"></div>
+        </div>
       </div>
 
       <div style="margin-top:2.5rem">
@@ -651,10 +903,14 @@
               <input type="time" id="sig-daily-time" value="09:00">
             </div>
           </div>
-          <div style="margin-top:0.5rem">
+          <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.6rem">
             <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
               <input type="checkbox" id="sig-enabled" style="width:18px;height:18px;accent-color:var(--accent)">
               <span>Enable Signal notifications</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="sig-nudge-enabled" style="width:18px;height:18px;accent-color:var(--accent)">
+              <span>Auto-nudge users who haven't responded <span style="color:var(--text3);font-size:12px">(fires 24h after an event is created)</span></span>
             </label>
           </div>
           <div style="margin-top:1rem">
@@ -663,6 +919,7 @@
               <div>📅 <strong style="color:var(--text)">New event</strong> — when an admin creates a new weekly event</div>
               <div>📋 <strong style="color:var(--text)">Daily summary</strong> — who's available today, posted at the configured time</div>
               <div>🎉 <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
+              <div>👋 <strong style="color:var(--text)">Nudge</strong> — DMs each user with an incomplete week, 24h after event creation</div>
             </div>
           </div>
 
@@ -692,6 +949,7 @@ let currentUser = null;
 let currentEventId = null;
 let currentEventData = null;
 let liveAvailability = {}; // date -> { userId -> status }
+let detailDirty = false;   // local edits not yet reflected in the rendered views
 
 // ─── API HELPERS ───────────────────────────────────────────────
 async function api(path, opts = {}) {
@@ -724,13 +982,14 @@ async function doLogin() {
   }
 }
 
-function showAuthError(msg) { document.getElementById('auth-error').innerHTML = `<div class="error-msg">${msg}</div>`; }
+function showAuthError(msg) { document.getElementById('auth-error').innerHTML = `<div class="error-msg">${esc(msg)}</div>`; }
 function clearAuthError() { document.getElementById('auth-error').innerHTML = ''; }
 
 async function doLogout() {
   try {
     await api('/auth/logout', { method: 'POST' });
   } catch(e) { /* ignore — clear client side regardless */ }
+  stopEventPolling();
   token = null; currentUser = null;
   localStorage.removeItem('avail_token');
   document.getElementById('app-screen').style.display = 'none';
@@ -756,13 +1015,14 @@ async function enterApp() {
 // ─── NAVIGATION ─────────────────────────────────────────────────
 function showPage(name) {
   if (name === 'admin' && currentUser?.role !== 'admin') return;
+  if (name !== 'event-detail') { stopEventPolling(); currentEventId = null; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + (name === 'event-detail' ? 'event-detail' : name)).classList.add('active');
   const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
   if (navEl) navEl.classList.add('active');
   if (name === 'events') loadEvents();
-  if (name === 'admin') { loadUsers(); loadDiscordSettings(); loadSignalSettings(); loadSignalTemplates(); }
+  if (name === 'admin') { loadUsers(); loadRecurringSettings(); loadDiscordSettings(); loadSignalSettings(); loadSignalTemplates(); }
 }
 
 // ─── EVENTS ─────────────────────────────────────────────────────
@@ -778,8 +1038,8 @@ function buildEventCard(ev, isPast) {
       <div class="days">${start.getDate()}–${end.getDate()}</div>
     </div>
     <div class="event-info">
-      <div class="event-title">${esc(ev.title)}</div>
-      <div class="event-meta">${ev.description||'No description'} &nbsp;·&nbsp; Created by ${esc(ev.created_by_username)}${isPast ? ' &nbsp;·&nbsp; <span style="color:var(--text3)">view only</span>' : ''}</div>
+      <div class="event-title">${esc(ev.title)}${ev.is_recurring ? ' <span class="badge" style="background:var(--surface3);color:var(--text2);margin-left:4px">Recurring</span>' : ''}</div>
+      <div class="event-meta">${ev.description ? esc(ev.description) : 'No description'} &nbsp;·&nbsp; Created by ${esc(ev.created_by_username)}${isPast ? ' &nbsp;·&nbsp; <span style="color:var(--text3)">view only</span>' : ''}</div>
     </div>
   `;
   return card;
@@ -791,7 +1051,7 @@ async function loadEvents() {
   try {
     const events = await api('/events/');
     if (!events.length) {
-      el.innerHTML = `<div class="empty"><div class="icon">📅</div><h3>No events yet</h3><p>${currentUser.role==='admin'?'Create your first weekly event above.':'Ask an admin to create an event.'}</p></div>`;
+      el.innerHTML = `<div class="empty-state"><div class="icon">📅</div><h3>No events yet</h3><p>${currentUser.role==='admin'?'Create your first weekly event above.':'Ask an admin to create an event.'}</p></div>`;
       return;
     }
 
@@ -832,11 +1092,12 @@ async function loadEvents() {
       el.appendChild(section);
     }
   } catch(e) {
-    el.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    el.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
 async function loadEventDetail(eventId, isPast = false) {
+  if (eventId !== currentEventId) timesDay = null;
   currentEventId = eventId;
   showPage('event-detail');
   document.getElementById('week-grid-wrap').innerHTML = '<div style="padding:3rem;text-align:center"><div class="spinner"></div></div>';
@@ -861,19 +1122,495 @@ async function loadEventDetail(eventId, isPast = false) {
             <hr class="action-menu-divider">
             <button class="action-menu-item" onclick="sendSignalAnnouncement(${ev.id});closeActionMenus()">Signal 📣 Announce</button>
             <button class="action-menu-item" onclick="sendSignalSummary(${ev.id});closeActionMenus()">Signal 📋 Today's summary</button>
+            <hr class="action-menu-divider">
+            <button class="action-menu-item" onclick="sendSignalNudge(${ev.id});closeActionMenus()">Signal 👋 Nudge stragglers</button>
           </div>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="openEditEvent(${ev.id})">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Delete</button>`;
     } else { adminBtns.innerHTML = ''; }
 
-    renderWeekGrid(data, isPast);
+    // Render both views, then pick which to show
+    lastGridIsPast = isPast;
+    renderDetailViews();
+    lastDetailSig = detailSignature(data);
+
+    // "My week" is the default landing view
+    setDetailView(isPast ? 'grid' : (detailView || 'form'));
+
+    // Past events are read-only history — nothing to keep in sync
+    if (isPast) stopEventPolling(); else startEventPolling();
   } catch(e) {
-    document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+  }
+}
+
+// ─── RESPONSIVE HELPERS ──────────────────────────────────────────
+const COMPACT_MQ = window.matchMedia('(max-width: 640px)');
+function isCompactView() { return COMPACT_MQ.matches; }
+
+// Re-render the grid when crossing the breakpoint so labels switch form
+COMPACT_MQ.addEventListener('change', () => {
+  if (lastGridData) renderWeekGrid(lastGridData, lastGridIsPast);
+});
+
+// ─── DETAIL VIEW TOGGLE ──────────────────────────────────────────
+let detailView = null;
+let lastGridData = null;
+let lastGridIsPast = false;
+let timesDay = null;   // which day the time overlay is showing
+let lastDayIsos = [];  // the current event's 7 day keys
+
+function switchDetailView(view) {
+  setDetailView(view);
+  // Pull anything that landed since the last poll so the tab you just
+  // opened is current, rather than whatever was rendered on page load.
+  refreshEventDetail();
+}
+
+// Re-render both views from currentEventData. Cheap (7 days x N users),
+// and keeping them in one place is what stops the two tabs disagreeing.
+function renderDetailViews() {
+  if (!currentEventData) return;
+  renderWeekGrid(currentEventData, lastGridIsPast);
+  renderAvailForm(currentEventData, lastGridIsPast);
+  detailDirty = false;
+}
+
+function setDetailView(view) {
+  detailView = view;
+  if (detailDirty) renderDetailViews();
+  const formWrap = document.getElementById('avail-form-wrap');
+  const gridWrap = document.getElementById('week-grid-wrap');
+  const notesSec = document.getElementById('detail-bottom');
+  const isForm = view === 'form';
+
+  formWrap.style.display = isForm ? 'block' : 'none';
+  gridWrap.style.display = isForm ? 'none' : 'block';
+  if (notesSec) notesSec.style.display = isForm ? 'none' : '';
+
+  document.getElementById('vt-form')?.classList.toggle('active', isForm);
+  document.getElementById('vt-grid')?.classList.toggle('active', !isForm);
+
+  // Legend only matters for the grid view
+  document.querySelectorAll('#detail-legend .legend-item').forEach(el => {
+    el.style.display = isForm ? 'none' : '';
+  });
+}
+
+// ─── LIVE REFRESH ────────────────────────────────────────────────
+// The detail page polls while it's open so other people's answers show up
+// without having to leave the event and come back.
+const POLL_MS = 10000;
+let pollTimer = null;
+let lastDetailSig = '';
+
+function detailSignature(data) {
+  const rows = (data.availability || [])
+    .map(a => `${a.user_id}:${a.date}:${a.status}:${a.note || ''}:${a.start_time || ''}-${a.end_time || ''}`)
+    .sort().join('|');
+  const users = (data.users || []).map(u => u.id).sort().join(',');
+  return `${users}#${rows}`;
+}
+
+// Don't redraw while someone is mid-interaction — an open status dropdown
+// or a half-typed note keeps focus inside the wrapper.
+function isEditingIn(wrapId) {
+  const wrap = document.getElementById(wrapId);
+  const el = document.activeElement;
+  return !!(wrap && el && el !== document.body && wrap.contains(el));
+}
+
+function startEventPolling() {
+  stopEventPolling();
+  pollTimer = setInterval(refreshEventDetail, POLL_MS);
+}
+
+function stopEventPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function refreshEventDetail() {
+  if (!currentEventId || document.hidden) return;
+  if (!document.getElementById('page-event-detail').classList.contains('active')) return;
+
+  const eventId = currentEventId;
+  let data;
+  try {
+    data = await api(`/events/${eventId}`);
+  } catch(e) {
+    return;                                  // transient — try again next tick
+  }
+  if (eventId !== currentEventId) return;    // navigated away mid-request
+
+  const sig = detailSignature(data);
+  if (sig === lastDetailSig) return;         // nothing changed
+  if (isEditingIn(detailView === 'form' ? 'avail-form-wrap' : 'week-grid-wrap')) return;
+
+  currentEventData = data;
+  lastDetailSig = sig;
+  renderDetailViews();
+  setDetailView(detailView);
+}
+
+// Catch up immediately when the tab comes back to the foreground.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshEventDetail();
+});
+
+// Record a save locally so both views stay correct without a round trip.
+function updateLocalAvailability(date, status, note, start = '', end = '') {
+  if (!currentEventData) return;
+  const rows = currentEventData.availability;
+  const row = rows.find(a => a.user_id === currentUser.id && a.date === date);
+  if (row) {
+    row.status = status;
+    row.note = note;
+    row.start_time = start || null;
+    row.end_time = end || null;
+  } else {
+    rows.push({ user_id: currentUser.id, username: currentUser.username,
+                event_id: currentEventId, date, status, note,
+                start_time: start || null, end_time: end || null });
+  }
+  if (!liveAvailability[date]) liveAvailability[date] = {};
+  liveAvailability[date][currentUser.id] = status;
+  lastDetailSig = detailSignature(currentEventData);
+  detailDirty = true;
+}
+
+// ─── AVAILABILITY ENTRY FORM ─────────────────────────────────────
+let formDays = [];
+
+function renderAvailForm(data, isPast = false) {
+  const ev = data.event;
+  const wrap = document.getElementById('avail-form-wrap');
+
+  // Toggle is pointless on past events
+  document.getElementById('view-toggle').style.display = isPast ? 'none' : '';
+  if (isPast) { wrap.innerHTML = ''; return; }
+
+  // My current statuses and notes
+  const mine = {};
+  for (const a of data.availability) {
+    if (a.user_id === currentUser.id) {
+      mine[a.date] = { status: a.status, note: a.note || '',
+                       start: a.start_time || '', end: a.end_time || '' };
+    }
+  }
+
+  const start = new Date(ev.week_start + 'T00:00:00');
+  formDays = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    formDays.push(d.toISOString().slice(0,10));
+  }
+
+  const today = new Date().toISOString().slice(0,10);
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const setCount = formDays.filter(iso => mine[iso] && ['available','unavailable','maybe'].includes(mine[iso].status)).length;
+
+  const rows = formDays.map(iso => {
+    const d = new Date(iso + 'T00:00:00');
+    const cur   = mine[iso]?.status || '';
+    const note  = mine[iso]?.note || '';
+    const start = mine[iso]?.start || '';
+    const end   = mine[iso]?.end || '';
+    const hasTime = !!(start && end);
+    const mk = (val, sym, label) =>
+      `<button class="af-choice ${cur===val ? 'sel-'+val : ''}" title="${label}"
+         onclick="formSetStatus('${iso}', '${val}')">${sym}</button>`;
+    return `
+      <div class="af-day${iso===today?' today':''}" id="af-day-${iso}">
+        <div class="af-day-label">${dayNames[d.getDay()]}<span class="af-daynum">${d.getDate()}</span></div>
+        <button class="af-time-btn ${hasTime ? 'has-time' : ''}" id="af-timebtn-${iso}"
+          title="${hasTime ? 'Change the time you\'re free' : 'Add a time (optional)'}"
+          onclick="formToggleTime('${iso}')">${hasTime
+            ? fmtRangeShort(start, end)
+            : '<span class="af-time-plus">+</span> Time'}</button>
+        <div class="af-choices">
+          ${mk('available','✓','Available')}
+          ${mk('maybe','~','Maybe')}
+          ${mk('unavailable','✗','Unavailable')}
+        </div>
+        <button class="af-note-btn ${note ? 'has-note' : ''}" title="${note ? esc(note) : 'Add a note'}"
+          onclick="formToggleNote('${iso}')">🗨</button>
+      </div>
+      <div class="af-time-row" id="af-time-${iso}" style="display:${hasTime ? 'flex' : 'none'}">
+        <input type="time" id="af-start-${iso}" value="${esc(start)}" aria-label="Free from"
+          onchange="formSaveTime('${iso}')">
+        <span class="af-time-sep">to</span>
+        <input type="time" id="af-end-${iso}" value="${esc(end)}" aria-label="Free until"
+          onchange="formSaveTime('${iso}')">
+        <button class="af-time-clear" onclick="formClearTime('${iso}')">Clear</button>
+        <div class="af-time-hint">Optional — leave blank if you're free any time that day.</div>
+      </div>
+      <div class="af-note-row" id="af-note-${iso}" style="display:${note ? 'block' : 'none'}">
+        <input type="text" maxlength="60" placeholder="e.g. Free after 7pm" value="${esc(note)}"
+          onchange="formSaveNote('${iso}', this.value)"
+          onkeydown="if(event.key==='Enter'){this.blur();}">
+      </div>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="af-card">
+      <div class="af-header">
+        <div>
+          <h3>${esc(ev.title)}</h3>
+          <div class="af-sub">Your availability</div>
+        </div>
+        <div class="af-progress" id="af-progress"><strong>${setCount}</strong> of 7 set</div>
+      </div>
+      <div class="af-quick">
+        <button class="btn btn-ghost btn-sm" onclick="formCopyLastWeek(${ev.id})">Copy last week</button>
+        <button class="btn btn-ghost btn-sm" onclick="formAllFree()">All free</button>
+      </div>
+      ${rows}
+      <div class="af-footer">Saves as you tap</div>
+    </div>`;
+}
+
+function formUpdateProgress() {
+  const set = formDays.filter(iso => {
+    const row = document.getElementById(`af-day-${iso}`);
+    return row && row.querySelector('.af-choice[class*="sel-"]');
+  }).length;
+  const el = document.getElementById('af-progress');
+  if (el) el.innerHTML = `<strong>${set}</strong> of 7 set`;
+}
+
+async function formSetStatus(iso, status) {
+  const row = document.getElementById(`af-day-${iso}`);
+  if (!row) return;
+  const btns = [...row.querySelectorAll('.af-choice')];
+  const clicked = btns.find(b => b.className.includes('sel-' + status));
+
+  // Tapping the already-selected choice clears it
+  const clearing = !!clicked;
+  btns.forEach(b => b.className = 'af-choice');
+
+  if (!clearing) {
+    const idx = { available: 0, maybe: 1, unavailable: 2 }[status];
+    if (btns[idx]) btns[idx].className = `af-choice sel-${status}`;
+  }
+  formUpdateProgress();
+
+  // The API overwrites note and times on every save, so resend what's there.
+  const note = formCurrentNote(iso);
+  const saved = clearing ? 'unavailable' : status;
+  const start = document.getElementById(`af-start-${iso}`)?.value || '';
+  const end   = document.getElementById(`af-end-${iso}`)?.value || '';
+  const keep  = start && end && start !== end;
+
+  try {
+    await api(`/availability/event/${currentEventId}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ date: iso, status: saved, note,
+                             start_time: keep ? start : '', end_time: keep ? end : '' })
+    });
+    updateLocalAvailability(iso, saved, note, keep ? start : '', keep ? end : '');
+  } catch(e) {
+    toast('Failed to save: ' + e.message);
+  }
+}
+
+function formCurrentNote(iso) {
+  const input = document.querySelector(`#af-note-${iso} input`);
+  return input ? input.value.trim().slice(0, 60) : '';
+}
+
+// ─── TIME HELPERS ────────────────────────────────────────────────
+// Times are stored as 'HH:MM'. An end at or before the start means the
+// session runs past midnight, so end-minutes get a day added.
+function toMinutes(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
+  return m ? (+m[1]) * 60 + (+m[2]) : null;
+}
+
+function fmtTime(mins) {
+  const m = ((mins % 1440) + 1440) % 1440;
+  const h24 = Math.floor(m / 60), min = m % 60;
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${String(min).padStart(2,'0')} ${h24 < 12 ? 'AM' : 'PM'}`;
+}
+
+// Compact form for the button: "7p–11p", "7:30p–1a"
+function fmtShort(mins) {
+  const m = ((mins % 1440) + 1440) % 1440;
+  const h24 = Math.floor(m / 60), min = m % 60;
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}${min ? ':' + String(min).padStart(2,'0') : ''}${h24 < 12 ? 'a' : 'p'}`;
+}
+
+function fmtRangeShort(start, end) {
+  const s = toMinutes(start), e = toMinutes(end);
+  if (s === null || e === null) return '';
+  return `${fmtShort(s)}–${fmtShort(e)}`;
+}
+
+// End of the block in minutes, rolled past midnight when it wraps
+function rangeEndMinutes(startMin, endMin) {
+  return endMin <= startMin ? endMin + 1440 : endMin;
+}
+
+function formToggleTime(iso) {
+  const row = document.getElementById(`af-time-${iso}`);
+  if (!row) return;
+  const showing = row.style.display !== 'none';
+  row.style.display = showing ? 'none' : 'flex';
+  if (!showing) document.getElementById(`af-start-${iso}`)?.focus();
+}
+
+function formDayStatus(iso) {
+  const sel = document.getElementById(`af-day-${iso}`)?.querySelector('.af-choice[class*="sel-"]');
+  return sel ? sel.className.match(/sel-(\w+)/)[1] : '';
+}
+
+async function formSaveTime(iso) {
+  const start = document.getElementById(`af-start-${iso}`)?.value || '';
+  const end   = document.getElementById(`af-end-${iso}`)?.value || '';
+
+  // Half-filled is a normal in-between state while picking — wait for both.
+  if (!start || !end) return;
+  if (start === end) { toast('Start and end time must differ'); return; }
+
+  const status = formDayStatus(iso);
+  if (!status) { toast('Pick a status for that day first'); return; }
+
+  await saveDay(iso, status, formCurrentNote(iso), start, end,
+                `Free ${fmtRangeShort(start, end)}`);
+}
+
+async function formClearTime(iso) {
+  const startEl = document.getElementById(`af-start-${iso}`);
+  const endEl   = document.getElementById(`af-end-${iso}`);
+  if (startEl) startEl.value = '';
+  if (endEl) endEl.value = '';
+
+  const status = formDayStatus(iso);
+  if (!status) { document.getElementById(`af-time-${iso}`).style.display = 'none'; return; }
+  await saveDay(iso, status, formCurrentNote(iso), '', '', 'Time cleared');
+}
+
+// One save path for the form's status / note / time edits.
+async function saveDay(iso, status, note, start, end, okMsg) {
+  try {
+    await api(`/availability/event/${currentEventId}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ date: iso, status, note, start_time: start, end_time: end })
+    });
+    updateLocalAvailability(iso, status, note, start, end);
+    refreshTimeButton(iso, start, end);
+    if (okMsg) toast(okMsg);
+  } catch(e) {
+    toast('Failed to save: ' + e.message);
+  }
+}
+
+function refreshTimeButton(iso, start, end) {
+  const btn = document.getElementById(`af-timebtn-${iso}`);
+  if (!btn) return;
+  const has = !!(start && end);
+  btn.classList.toggle('has-time', has);
+  btn.innerHTML = has ? fmtRangeShort(start, end) : '<span class="af-time-plus">+</span> Time';
+  btn.title = has ? "Change the time you're free" : 'Add a time (optional)';
+}
+
+function formToggleNote(iso) {
+  const row = document.getElementById(`af-note-${iso}`);
+  if (!row) return;
+  const showing = row.style.display !== 'none';
+  row.style.display = showing ? 'none' : 'block';
+  if (!showing) row.querySelector('input')?.focus();
+}
+
+async function formSaveNote(iso, value) {
+  const note = value.trim();
+  const row = document.getElementById(`af-day-${iso}`);
+  const status = row?.querySelector('.af-choice[class*="sel-"]')
+    ? row.querySelector('.af-choice[class*="sel-"]').className.match(/sel-(\w+)/)[1]
+    : '';
+  if (!status) { toast('Pick a status for that day first'); return; }
+
+  const btn = row.querySelector('.af-note-btn');
+  if (btn) btn.classList.toggle('has-note', !!note);
+
+  try {
+    const start = document.getElementById(`af-start-${iso}`)?.value || '';
+    const end   = document.getElementById(`af-end-${iso}`)?.value || '';
+    const keep  = start && end && start !== end;
+    await api(`/availability/event/${currentEventId}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ date: iso, status, note,
+                             start_time: keep ? start : '', end_time: keep ? end : '' })
+    });
+    updateLocalAvailability(iso, status, note, keep ? start : '', keep ? end : '');
+  } catch(e) {
+    toast('Failed to save note: ' + e.message);
+  }
+}
+
+async function formAllFree() {
+  const entries = formDays.map(date => ({ date, status: 'available' }));
+  try {
+    await api(`/availability/event/${currentEventId}/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ entries })
+    });
+    toast('Marked all 7 days available');
+    loadEventDetail(currentEventId);
+  } catch(e) {
+    toast('Failed: ' + e.message);
+  }
+}
+
+async function formCopyLastWeek(eventId) {
+  try {
+    const events = await api('/events/');
+    const cur = events.find(e => e.id === eventId);
+    if (!cur) { toast('Could not find this event'); return; }
+
+    // Most recent event that starts before this one
+    const prev = events
+      .filter(e => e.week_start < cur.week_start)
+      .sort((a,b) => b.week_start.localeCompare(a.week_start))[0];
+    if (!prev) { toast('No previous week to copy from'); return; }
+
+    const prevData = await api(`/events/${prev.id}`);
+    const prevMine = prevData.availability.filter(a => a.user_id === currentUser.id);
+    if (!prevMine.length) { toast('You had nothing set last week'); return; }
+
+    // Map by weekday so the dates line up with this week
+    const byDow = {};
+    for (const a of prevMine) {
+      byDow[new Date(a.date + 'T00:00:00').getDay()] = {
+        status: a.status, note: a.note || '',
+        start_time: a.start_time || '', end_time: a.end_time || ''
+      };
+    }
+
+    const entries = formDays.map(date => {
+      const src = byDow[new Date(date + 'T00:00:00').getDay()];
+      return src ? { date, status: src.status, note: src.note,
+                     start_time: src.start_time, end_time: src.end_time } : null;
+    }).filter(Boolean);
+
+    if (!entries.length) { toast('Nothing to copy'); return; }
+
+    await api(`/availability/event/${currentEventId}/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ entries })
+    });
+    toast(`Copied ${entries.length} days from last week`);
+    loadEventDetail(currentEventId);
+  } catch(e) {
+    toast('Failed to copy: ' + e.message);
   }
 }
 
 function renderWeekGrid(data, isPast = false) {
+  lastGridData = data; lastGridIsPast = isPast;
   const ev = data.event;
   const users = data.users;
   const availability = data.availability;
@@ -916,9 +1653,14 @@ function renderWeekGrid(data, isPast = false) {
 
   const today = new Date().toISOString().slice(0,10);
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const statusEmoji = { available: '✓', unavailable: '✗', maybe: '~', '': '' };
-  const statusOrder = ['available', 'unavailable', 'maybe', ''];
-  const nextStatus = { 'available': 'unavailable', 'unavailable': 'maybe', 'maybe': '', '': 'available' };
+  const statusEmoji = { available: '✓', unavailable: '✗', maybe: '~', '': '—' };
+  const statusTitle = { available: 'Available', unavailable: 'Unavailable', maybe: 'Maybe', '': 'No response' };
+  // Icons only on narrow screens; full words when there's room
+  const compact = isCompactView();
+  const iconCls = compact ? ' icon-only' : '';
+  const cellLabel = s2 => compact
+    ? (statusEmoji[s2] || '—')
+    : `${statusEmoji[s2] || '—'} ${statusTitle[s2] || 'No response'}`;
 
   let html = `<div class="week-grid">`;
   // Header row
@@ -943,39 +1685,33 @@ function renderWeekGrid(data, isPast = false) {
       const iso = d.toISOString().slice(0,10);
       const isWknd = d.getDay()===0||d.getDay()===6;
       const status = (avMap[user.id]||{})[iso] || '';
-      const pillClass = status || 'empty';
+      const pillClass = status || 'st-none';
       const symbol = statusEmoji[status] || '·';
       const myNote = ((avMap[user.id] || {})[iso + '_note']) || '';
       if (isMine) {
         const myNoteIdx = myNote ? allNotes.findIndex(n => n.username === user.username && n.date === iso) : -1;
         html += `<div class="week-grid-cell avail-cell" data-user="${user.id}" data-date="${iso}">
-          <div class="avail-cell-inner">
+          <div class="avail-cell-inner" style="align-items:center">
             ${isPast
-              ? `<div class="avail-pill-label ${pillClass}">${{available:'✓ Available',unavailable:'✗ Unavailable',maybe:'~ Maybe','':'—'}[status]||'—'}</div>
-                 ${myNote ? `<div class="avail-note-text" title="${esc(myNote)}">${esc(myNote)}</div>` : ''}`
-              : `<select class="avail-select ${pillClass}" onchange="setAvailability(this, ${currentEventId}, '${iso}')">
-                   <option value="" ${status===''?'selected':''} class="opt-empty">— No response</option>
-                   <option value="available" ${status==='available'?'selected':''} class="opt-available">✓ Available</option>
-                   <option value="unavailable" ${status==='unavailable'?'selected':''} class="opt-unavailable">✗ Unavailable</option>
-                   <option value="maybe" ${status==='maybe'?'selected':''} class="opt-maybe">~ Maybe</option>
-                 </select>
-                 <input type="text" class="avail-note-input" placeholder="Add a note…" maxlength="60"
-                   value="${esc(myNote)}"
-                   onchange="saveNote(this, ${currentEventId}, '${iso}')"
-                   onkeydown="if(event.key==='Enter'){this.blur();}">`
+              ? `<div class="avail-pill-compact ${pillClass}${iconCls}" title="${statusTitle[status]||'No response'}">${cellLabel(status)}</div>`
+              : `<select class="avail-select-compact ${pillClass}${iconCls}" title="${statusTitle[status]||'No response'}"
+                   onchange="setAvailability(this, ${currentEventId}, '${iso}')">
+                   <option value=""            ${status===''?'selected':''}>${cellLabel('')}</option>
+                   <option value="available"   ${status==='available'?'selected':''}>${cellLabel('available')}</option>
+                   <option value="unavailable" ${status==='unavailable'?'selected':''}>${cellLabel('unavailable')}</option>
+                   <option value="maybe"       ${status==='maybe'?'selected':''}>${cellLabel('maybe')}</option>
+                 </select>`
             }
-            ${myNote && myNoteIdx >= 0 ? `<a class="note-link" onclick="scrollToNote(${myNoteIdx})">● 1 Note</a>` : ''}
+            ${myNote && myNoteIdx >= 0 ? `<span class="note-dot" title="${esc(myNote)}" onclick="scrollToNote(${myNoteIdx})"></span>` : ''}
           </div>
         </div>`;
       } else {
-        const pillLabel = { available: '✓ Available', unavailable: '✗ Unavailable', maybe: '~ Maybe', '': '—' };
         const otherNote = ((avMap[user.id] || {})[iso + '_note']) || '';
         const noteIdx = otherNote ? allNotes.findIndex(n => n.username === user.username && n.date === iso) : -1;
         html += `<div class="week-grid-cell avail-cell">
           <div class="avail-cell-inner" style="align-items:center">
-            <div class="avail-pill-label ${pillClass}">${pillLabel[status] || '—'}</div>
-            ${otherNote ? `<div class="avail-note-text" title="${esc(otherNote)}">${esc(otherNote)}</div>` : ''}
-            ${otherNote && noteIdx >= 0 ? `<a class="note-link" onclick="scrollToNote(${noteIdx})">● 1 Note</a>` : ''}
+            <div class="avail-pill-compact ${pillClass}${iconCls}" title="${statusTitle[status]||'No response'}${otherNote ? ' — ' + esc(otherNote) : ''}">${cellLabel(status)}</div>
+            ${otherNote && noteIdx >= 0 ? `<span class="note-dot" title="${esc(otherNote)}" onclick="scrollToNote(${noteIdx})"></span>` : ''}
           </div>
         </div>`;
       }
@@ -1019,11 +1755,22 @@ function renderWeekGrid(data, isPast = false) {
     notesHtml = '<div class="mobile-notes-section" id="mobile-notes-section"></div>';
   }
 
+  // Default the overlay to today when today is in this week, else day one
+  const dayIsos = days.map(d => d.toISOString().slice(0,10));
+  lastDayIsos = dayIsos;
+  if (!timesDay || !dayIsos.includes(timesDay)) {
+    timesDay = dayIsos.includes(today) ? today : dayIsos[0];
+  }
+  const bottomHtml = `<div class="detail-bottom" id="detail-bottom">
+      ${notesHtml}
+      ${buildTimesPanel(users, availability, dayIsos, dayNames)}
+    </div>`;
+
   document.getElementById('week-grid-wrap').innerHTML = html;
-  // Append mobile notes section after grid wrap
-  const existingNotes = document.getElementById('mobile-notes-section');
-  if (existingNotes) existingNotes.remove();
-  document.getElementById('week-grid-wrap').insertAdjacentHTML('afterend', notesHtml);
+  // Append the notes + times row after the grid
+  const existingBottom = document.getElementById('detail-bottom');
+  if (existingBottom) existingBottom.remove();
+  document.getElementById('week-grid-wrap').insertAdjacentHTML('afterend', bottomHtml);
 
   // Scroll hint on mobile: auto-scroll to show today's column if possible
   const wrap = document.getElementById('week-grid-wrap');
@@ -1033,48 +1780,164 @@ function renderWeekGrid(data, isPast = false) {
   }
 }
 
+// ─── EVERYONE: TIME-BLOCK OVERLAY ────────────────────────────────
+const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function fmtDur(mins) {
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+}
+
+function setTimesDay(iso) {
+  timesDay = iso;
+  const panel = document.getElementById('times-panel');
+  if (!panel || !currentEventData) return;
+  panel.outerHTML = buildTimesPanel(currentEventData.users, currentEventData.availability,
+                                    lastDayIsos, DAY_ABBR);
+}
+
+function buildTimesPanel(users, availability, dayIsos, dayNames) {
+  const byUser = new Map(users.map(u => [u.id, u]));
+  const timed = a => a.start_time && a.end_time &&
+                     (a.status === 'available' || a.status === 'maybe');
+
+  const blocks = availability
+    .filter(a => a.date === timesDay && timed(a) && byUser.has(a.user_id))
+    .map(a => {
+      const start = toMinutes(a.start_time), rawEnd = toMinutes(a.end_time);
+      if (start === null || rawEnd === null) return null;
+      return { username: byUser.get(a.user_id).username, status: a.status,
+               start, end: rangeEndMinutes(start, rawEnd) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+
+  // People free that day who didn't give a time — they're not on the chart,
+  // so say so rather than letting the overlap read as the whole picture.
+  const untimed = availability.filter(a =>
+    a.date === timesDay && !timed(a) && byUser.has(a.user_id) &&
+    (a.status === 'available' || a.status === 'maybe')).length;
+  const untimedNote = untimed
+    ? ` · <span style="color:var(--text3)">${untimed} more free, no time given</span>` : '';
+
+  const daysWithTimes = new Set(availability.filter(timed).map(a => a.date));
+  const chips = dayIsos.map(iso => {
+    const d = new Date(iso + 'T00:00:00');
+    return `<button class="times-day${iso === timesDay ? ' active' : ''}${daysWithTimes.has(iso) ? ' has-times' : ''}"
+      onclick="setTimesDay('${iso}')" title="${fmtDateShort(iso)}">${dayNames[d.getDay()]}</button>`;
+  }).join('');
+
+  const head = `<div class="times-head">
+      <p class="section-title" style="margin-bottom:0">🕐 Times — ${fmtDateShort(timesDay)}</p>
+      <div class="times-days">${chips}</div>
+    </div>`;
+
+  if (!blocks.length) {
+    const freeNote = untimed
+      ? `<div class="tl-empty">${untimed} ${untimed === 1 ? 'person is' : 'people are'} free this day but haven't given a time — add yours under <strong>My week</strong>.</div>`
+      : `<div class="tl-empty">Nobody has set a time for this day yet — add one under <strong>My week</strong>.</div>`;
+    return `<div class="times-panel" id="times-panel">${head}${freeNote}</div>`;
+  }
+
+  // Axis window: whole hours around the blocks, at least 4h wide
+  const lo = Math.floor(Math.min(...blocks.map(b => b.start)) / 60) * 60;
+  let hi = Math.ceil(Math.max(...blocks.map(b => b.end)) / 60) * 60;
+  if (hi - lo < 240) hi = lo + 240;
+  const span = hi - lo;
+  const pct = m => ((m - lo) / span) * 100;
+
+  // The overlay proper: the window that works for everyone shown
+  const olStart = Math.max(...blocks.map(b => b.start));
+  const olEnd   = Math.min(...blocks.map(b => b.end));
+  const hasOverlap = blocks.length > 1 && olEnd > olStart;
+  const band = hasOverlap
+    ? `<div class="tl-overlap" style="left:${pct(olStart)}%;width:${pct(olEnd) - pct(olStart)}%"></div>`
+    : '';
+
+  const rows = blocks.map(b => `
+    <div class="tl-row">
+      <div class="tl-name">
+        <div class="mini-avatar">${esc(b.username[0].toUpperCase())}</div>
+        <span class="uname">${esc(b.username)}</span>
+      </div>
+      <div class="tl-track">${band}
+        <div class="tl-block ${b.status}"
+             style="left:${pct(b.start)}%;width:${pct(b.end) - pct(b.start)}%"
+             title="${esc(b.username)}: ${fmtTime(b.start)} – ${fmtTime(b.end)}${b.end >= 1440 ? ' (next day)' : ''}">
+          ${fmtShort(b.start)}–${fmtShort(b.end)}
+        </div>
+      </div>
+    </div>`).join('');
+
+  let step = 60;
+  if (span > 300) step = 120;
+  if (span > 600) step = 180;
+  const tickAt = [];
+  for (let m = lo; m <= hi; m += step) tickAt.push(m);
+  // The step rarely lands exactly on the end, so label it explicitly —
+  // otherwise a block can run to an edge with no time against it.
+  const last = tickAt[tickAt.length - 1];
+  if (last < hi) {
+    if (hi - last < step / 2) tickAt[tickAt.length - 1] = hi;
+    else tickAt.push(hi);
+  }
+  const ticks = tickAt.map(m => {
+    const at = pct(m);
+    // Keep the end labels inside the track instead of half off it
+    const shift = at <= 0.5 ? 'translateX(0)' : (at >= 99.5 ? 'translateX(-100%)' : 'translateX(-50%)');
+    return `<div class="tl-tick" style="left:${at}%;transform:${shift}">${fmtShort(m)}</div>`;
+  }).join('');
+
+  let note;
+  if (blocks.length === 1) {
+    note = `<div class="tl-overlap-note none">Only <strong>${esc(blocks[0].username)}</strong> has given a time${untimedNote}</div>`;
+  } else if (hasOverlap) {
+    note = `<div class="tl-overlap-note">All ${blocks.length} overlap
+      <strong>${fmtTime(olStart)} – ${fmtTime(olEnd)}</strong> (${fmtDur(olEnd - olStart)})${untimedNote}</div>`;
+  } else {
+    note = `<div class="tl-overlap-note none">No window works for <strong>all ${blocks.length}</strong> on this day${untimedNote}</div>`;
+  }
+
+  return `<div class="times-panel" id="times-panel">
+    ${head}
+    ${rows}
+    <div class="tl-axis"><div></div><div class="tl-ticks">${ticks}</div></div>
+    ${note}
+  </div>`;
+}
+
 async function setAvailability(selectEl, eventId, date) {
   const newStatus = selectEl.value;
-  const prev = selectEl.className;
+  const prevClass = selectEl.className;
+  const prevStatus = (prevClass.match(/avail-select-compact\s+(\w+)/) || [])[1] || '';
 
-  // Update select colour immediately
-  selectEl.className = `avail-select ${newStatus || 'empty'}`;
+  // Update select colour + tooltip immediately
+  const titles = { available: 'Available', unavailable: 'Unavailable', maybe: 'Maybe', '': 'No response' };
+  selectEl.className = `avail-select-compact ${newStatus || 'st-none'}${isCompactView() ? ' icon-only' : ''}`;
+  selectEl.title = titles[newStatus] || 'No response';
+
+  // The API overwrites note on every save, so resend the one already there.
+  const status = newStatus || 'available';
+  const existing = (currentEventData?.availability || [])
+    .find(a => a.user_id === currentUser.id && a.date === date);
+  const note = existing?.note || '';
+  const start = existing?.start_time || '';
+  const end = existing?.end_time || '';
 
   try {
     await api(`/availability/event/${eventId}/set`, {
       method: 'POST',
-      body: JSON.stringify({ date, status: newStatus || 'available' })
+      body: JSON.stringify({ date, status, note, start_time: start, end_time: end })
     });
-    // Update live mirror
-    if (!liveAvailability[date]) liveAvailability[date] = {};
-    liveAvailability[date][currentUser.id] = newStatus || 'available';
+    updateLocalAvailability(date, status, note, start, end);
     updateSummaryRow();
   } catch(e) {
-    selectEl.className = prev;
-    // Revert value
-    selectEl.value = prev.replace('avail-select ', '').replace('avail-select', '').trim();
+    selectEl.className = prevClass;
+    selectEl.value = prevStatus === 'st-none' ? '' : prevStatus;
     toast('Failed to save: ' + e.message);
   }
 }
 
-async function saveNote(inputEl, eventId, date) {
-  const note = inputEl.value.trim();
-  // Find the sibling select to get current status
-  const select = inputEl.closest('.avail-cell-inner').querySelector('.avail-select');
-  const status = select ? select.value : '';
-  if (!status) return; // Don't save a note with no status set
-  try {
-    await api(`/availability/event/${eventId}/set`, {
-      method: 'POST',
-      body: JSON.stringify({ date, status: status || 'available', note })
-    });
-    // Update liveAvailability note mirror
-    if (!liveAvailability[date]) liveAvailability[date] = {};
-    liveAvailability[date][currentUser.id + '_note'] = note;
-  } catch(e) {
-    toast('Failed to save note: ' + e.message);
-  }
-}
 
 function updateSummaryRow() {
   // Count available per date from the live mirror (all users, always accurate)
@@ -1123,7 +1986,7 @@ async function submitCreateEvent() {
     await api('/events/', { method:'POST', body: JSON.stringify({ title, description: desc, week_start: start, week_end: end }) });
     closeModal(); toast('Event created!'); loadEvents();
   } catch(e) {
-    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1154,7 +2017,7 @@ async function submitEditEvent(id) {
     })});
     closeModal(); toast('Event updated!'); loadEventDetail(id);
   } catch(e) {
-    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1166,6 +2029,66 @@ async function deleteEvent(id) {
   } catch(e) { toast(e.message); }
 }
 
+
+// ─── RECURRING EVENTS ────────────────────────────────────────────
+async function loadRecurringSettings() {
+  try {
+    const data = await api('/recurring/settings');
+    document.getElementById('rc-day').value = data.recurring_day || '4';
+    document.getElementById('rc-time').value = data.recurring_time || '09:00';
+    document.getElementById('rc-title').value = data.recurring_title || '';
+    document.getElementById('rc-description').value = data.recurring_description || '';
+    document.getElementById('rc-enabled').checked = data.recurring_enabled === 'true';
+
+    const badge = document.getElementById('recurring-status-badge');
+    if (data.recurring_enabled === 'true') {
+      const dayName = (data.day_names || [])[parseInt(data.recurring_day || '4')] || '';
+      badge.innerHTML = `<span class="badge" style="background:var(--green-bg);color:var(--green)">${dayName} ${data.recurring_time}</span>`;
+    } else {
+      badge.innerHTML = '<span class="badge" style="background:var(--surface3);color:var(--text2)">Off</span>';
+    }
+
+    const lr = document.getElementById('rc-last-run');
+    lr.textContent = data.recurring_last_run
+      ? `Last auto-created: ${data.recurring_last_run}`
+      : 'No event has been auto-created yet.';
+  } catch(e) {
+    console.error('Failed to load recurring settings', e);
+  }
+}
+
+async function saveRecurringSettings() {
+  const errEl = document.getElementById('recurring-settings-error');
+  errEl.innerHTML = '';
+  try {
+    await api('/recurring/settings', {
+      method: 'POST',
+      body: JSON.stringify({
+        recurring_day:         document.getElementById('rc-day').value,
+        recurring_time:        document.getElementById('rc-time').value,
+        recurring_title:       document.getElementById('rc-title').value,
+        recurring_description: document.getElementById('rc-description').value,
+        recurring_enabled:     document.getElementById('rc-enabled').checked ? 'true' : 'false'
+      })
+    });
+    toast('Recurring settings saved!');
+    loadRecurringSettings();
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+  }
+}
+
+async function createRecurringNow() {
+  const errEl = document.getElementById('recurring-settings-error');
+  errEl.innerHTML = '';
+  try {
+    const data = await api('/recurring/create-now', { method: 'POST', body: JSON.stringify({}) });
+    toast(data.message);
+    loadRecurringSettings();
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+  }
+}
 
 // ─── DISCORD ─────────────────────────────────────────────────────
 async function loadDiscordSettings() {
@@ -1205,7 +2128,7 @@ async function saveDiscordSettings() {
     toast('Discord settings saved!');
     loadDiscordSettings();
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1216,7 +2139,7 @@ async function testDiscord() {
     const data = await api('/discord/test', { method: 'POST' });
     toast(data.message);
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1270,6 +2193,7 @@ async function loadSignalSettings() {
     document.getElementById('sig-recipient').value = data.signal_recipient || '';
     document.getElementById('sig-daily-time').value = data.signal_daily_time || '09:00';
     document.getElementById('sig-enabled').checked = data.signal_enabled === 'true';
+    document.getElementById('sig-nudge-enabled').checked = data.signal_nudge_enabled === 'true';
     const badge = document.getElementById('signal-status-badge');
     if (data.signal_configured) {
       badge.innerHTML = '<span class="badge" style="background:var(--green-bg);color:var(--green)">Connected</span>';
@@ -1293,13 +2217,14 @@ async function saveSignalSettings() {
         signal_sender:    document.getElementById('sig-sender').value.trim(),
         signal_recipient: document.getElementById('sig-recipient').value.trim(),
         signal_daily_time: document.getElementById('sig-daily-time').value,
-        signal_enabled:   document.getElementById('sig-enabled').checked ? 'true' : 'false'
+        signal_enabled:   document.getElementById('sig-enabled').checked ? 'true' : 'false',
+        signal_nudge_enabled: document.getElementById('sig-nudge-enabled').checked ? 'true' : 'false'
       })
     });
     toast('Signal settings saved!');
     loadSignalSettings();
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1310,7 +2235,7 @@ async function testSignal() {
     const data = await api('/signal/test', { method: 'POST' });
     toast(data.message);
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1338,6 +2263,7 @@ const TEMPLATE_LABELS = {
   signal_template_event_created: { icon: '📅', title: 'New event announcement' },
   signal_template_daily_summary:  { icon: '📋', title: 'Daily summary' },
   signal_template_all_available:  { icon: '🎉', title: 'Everyone available' },
+  signal_template_nudge:          { icon: '👋', title: 'Nudge (DM to individual user)' },
 };
 
 async function loadSignalTemplates() {
@@ -1445,30 +2371,45 @@ async function sendSignalSummary(eventId) {
   }
 }
 
+async function sendSignalNudge(eventId) {
+  try {
+    const data = await api(`/signal/send/nudge/${eventId}`, {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
+    toast(data.message);
+  } catch(e) {
+    toast('Nudge failed: ' + e.message);
+  }
+}
+
 // ─── ADMIN: USERS ────────────────────────────────────────────────
+let adminUsers = [];
+
 async function loadUsers() {
   const tbody = document.getElementById('users-tbody');
   tbody.innerHTML = '<tr><td colspan="6" style="padding:2rem;text-align:center"><div class="spinner"></div></td></tr>';
   try {
     const users = await api('/admin/users');
+    adminUsers = users;
     tbody.innerHTML = '';
     for (const u of users) {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${esc(u.username)}</strong></td>
         <td style="color:var(--text2)">${esc(u.email)}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:${u.signal_number?'var(--text2)':'var(--text3)'}">${u.signal_number ? esc(u.signal_number) : '—'}</td>
         <td><span class="role-badge ${u.role}">${u.role}</span></td>
         <td><span class="status-dot ${u.is_active?'active':'inactive'}"></span>${u.is_active?'Active':'Inactive'}</td>
-        <td style="color:var(--text2);font-size:13px">${new Date(u.created_at).toLocaleDateString()}</td>
         <td>
-          <button class="btn btn-ghost btn-sm" onclick="openEditUser(${u.id},'${esc(u.username)}','${esc(u.email)}','${u.role}',${u.is_active})">Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditUser(${u.id})">Edit</button>
           ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">Delete</button>`:''}
         </td>
       `;
       tbody.appendChild(tr);
     }
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="error-msg">${e.message}</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="error-msg">${esc(e.message)}</div></td></tr>`;
   }
 }
 
@@ -1480,6 +2421,7 @@ function openCreateUser() {
     <div class="form-group"><label>Email</label><input type="email" id="m-email"></div>
     <div class="form-group"><label>Password</label><input type="password" id="m-pass"></div>
     <div class="form-group"><label>Role</label><select id="m-role"><option value="user">User</option><option value="admin">Admin</option></select></div>
+    <div class="form-group"><label>Signal number <span style="color:var(--text3)">(optional, for nudges)</span></label><input type="text" id="m-signal" placeholder="+12345678900"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" style="width:auto" onclick="submitCreateUser()">Create</button>
@@ -1493,17 +2435,21 @@ async function submitCreateUser() {
       username: document.getElementById('m-uname').value,
       email: document.getElementById('m-email').value,
       password: document.getElementById('m-pass').value,
-      role: document.getElementById('m-role').value
+      role: document.getElementById('m-role').value,
+      signal_number: document.getElementById('m-signal').value
     })});
     closeModal(); toast('User created!'); loadUsers();
   } catch(e) {
-    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
-function openEditUser(id, username, email, role, isActive) {
+function openEditUser(id) {
+  const u = adminUsers.find(x => x.id === id);
+  if (!u) { toast('User not found — reloading'); loadUsers(); return; }
+  const { username, role, is_active: isActive, signal_number: signalNumber } = u;
   showModal(`
-    <h3>Edit ${username}</h3>
+    <h3>Edit ${esc(username)}</h3>
     <div id="modal-error"></div>
     <div class="form-group"><label>Role</label>
       <select id="m-role"><option value="user"${role==='user'?' selected':''}>User</option><option value="admin"${role==='admin'?' selected':''}>Admin</option></select>
@@ -1511,6 +2457,7 @@ function openEditUser(id, username, email, role, isActive) {
     <div class="form-group"><label>Status</label>
       <select id="m-active"><option value="1"${isActive?' selected':''}>Active</option><option value="0"${!isActive?' selected':''}>Inactive</option></select>
     </div>
+    <div class="form-group"><label>Signal number <span style="color:var(--text3)">(optional, for nudges)</span></label><input type="text" id="m-signal" placeholder="+12345678900" value="${esc(signalNumber||'')}"></div>
     <div class="form-group"><label>New password <span style="color:var(--text3)">(leave blank to keep)</span></label><input type="password" id="m-pass" placeholder="min 6 characters"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -1522,7 +2469,8 @@ function openEditUser(id, username, email, role, isActive) {
 async function submitEditUser(id) {
   const body = {
     role: document.getElementById('m-role').value,
-    is_active: parseInt(document.getElementById('m-active').value)
+    is_active: parseInt(document.getElementById('m-active').value),
+    signal_number: document.getElementById('m-signal').value
   };
   const pass = document.getElementById('m-pass').value;
   if (pass) body.password = pass;
@@ -1530,7 +2478,7 @@ async function submitEditUser(id) {
     await api(`/admin/users/${id}`, { method:'PUT', body: JSON.stringify(body) });
     closeModal(); toast('User updated!'); loadUsers();
   } catch(e) {
-    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1559,7 +2507,7 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function fmtDate(d) { return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 
 

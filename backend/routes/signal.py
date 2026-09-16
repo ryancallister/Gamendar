@@ -5,8 +5,10 @@ from signal_service import (
     get_setting, send_signal_message, signal_configured,
     notify_daily_summary, notify_event_announcement,
     TEMPLATE_DEFAULTS, TEMPLATE_PLACEHOLDERS, render_template,
-    build_event_announcement, build_daily_summary, build_all_available
+    build_event_announcement, build_daily_summary, build_all_available,
+    notify_nudge, auto_nudge_if_due
 )
+from scheduler_utils import is_due, claim_daily_run
 import threading
 import time
 from datetime import datetime, date
@@ -26,6 +28,7 @@ def get_signal_settings(current_user):
         'signal_recipient': get_setting(db, 'signal_recipient', ''),
         'signal_enabled':   get_setting(db, 'signal_enabled', 'false'),
         'signal_daily_time': get_setting(db, 'signal_daily_time', '09:00'),
+        'signal_nudge_enabled': get_setting(db, 'signal_nudge_enabled', 'false'),
         'signal_configured': signal_configured(db),
     })
 
@@ -36,7 +39,7 @@ def save_signal_settings(current_user):
     data = request.get_json()
     db = get_db()
     allowed = ['signal_api_url', 'signal_sender', 'signal_recipient',
-               'signal_enabled', 'signal_daily_time']
+               'signal_enabled', 'signal_daily_time', 'signal_nudge_enabled']
     for key in allowed:
         if key in data:
             db.execute(
@@ -69,7 +72,7 @@ def test_signal(current_user):
 # ── Message templates ─────────────────────────────────────────────
 
 TEMPLATE_KEYS = ['signal_template_event_created', 'signal_template_daily_summary',
-                  'signal_template_all_available']
+                  'signal_template_all_available', 'signal_template_nudge']
 
 
 @signal_bp.route('/templates', methods=['GET'])
@@ -148,10 +151,15 @@ def preview_template(current_user):
             unavailable_names='Volve', maybe_names='Wank',
             no_response_names='—', no_response_line=''
         )
-    else:  # all_available
+    elif key == 'signal_template_all_available':
         rendered = render_template(
             template, title=sample_event['title'], summary_date='Thu, Jun 25',
             total_count=5, available_names='admin, plat, chubb, Volve, Wank'
+        )
+    else:  # nudge
+        rendered = render_template(
+            template, username='plat', title=sample_event['title'],
+            week_start='Mon, Jun 22', week_end='Sun, Jun 28', days_missing=3
         )
 
     return jsonify({'preview': rendered})
@@ -179,6 +187,48 @@ def send_summary(current_user, event_id):
     if success:
         return jsonify({'message': f'Summary for {summary_date} sent!'})
     return jsonify({'error': error or 'Failed to send'}), 400
+
+
+@signal_bp.route('/send/nudge/<int:event_id>', methods=['POST'])
+@admin_required
+def send_nudge(current_user, event_id):
+    data = request.get_json() or {}
+    only_user_id = data.get('user_id')
+    db = get_db()
+    sent, errors = notify_nudge(db, event_id, only_user_id=only_user_id)
+    if sent and not errors:
+        return jsonify({'message': f'Nudged {sent} user{"s" if sent != 1 else ""}'})
+    if sent and errors:
+        return jsonify({'message': f'Nudged {sent}, {len(errors)} failed', 'errors': errors})
+    if errors:
+        return jsonify({'error': '; '.join(errors)}), 400
+    return jsonify({'message': 'Nobody needs nudging — everyone is up to date'})
+
+
+@signal_bp.route('/incomplete/<int:event_id>', methods=['GET'])
+@admin_required
+def get_incomplete(current_user, event_id):
+    """List active users who haven't completed all 7 days for this event."""
+    db = get_db()
+    users = db.execute(
+        'SELECT id, username, signal_number FROM users WHERE is_active = 1 ORDER BY username'
+    ).fetchall()
+    result = []
+    for u in users:
+        count = db.execute(
+            'SELECT COUNT(*) FROM availability WHERE event_id = ? AND user_id = ? '
+            "AND status IN ('available','unavailable','maybe')",
+            (event_id, u['id'])
+        ).fetchone()[0]
+        if count < 7:
+            result.append({
+                'id': u['id'],
+                'username': u['username'],
+                'days_set': count,
+                'days_missing': 7 - count,
+                'has_signal': bool(u['signal_number'] and u['signal_number'].strip()),
+            })
+    return jsonify(result)
 
 
 @signal_bp.route('/log', methods=['GET'])
@@ -209,7 +259,6 @@ def start_signal_scheduler(app):
         _scheduler_started = True
 
     def run():
-        last_run_date = None
         while True:
             time.sleep(60)
             try:
@@ -219,24 +268,38 @@ def start_signal_scheduler(app):
                         continue
                     daily_time = get_setting(db, 'signal_daily_time', '09:00')
                     now = datetime.now()
-                    today_str = now.strftime('%H:%M')
                     today_date = now.date().isoformat()
-                    if today_str == daily_time and last_run_date != today_date:
-                        last_run_date = today_date
-                        events = db.execute(
-                            'SELECT * FROM events WHERE week_start <= ? AND week_end >= ?',
-                            (today_date, today_date)
+
+                    # Auto-nudge: check every cycle for events created >24h ago
+                    # with users who still haven't filled in their availability
+                    try:
+                        recent_events = db.execute(
+                            "SELECT id FROM events WHERE created_at <= datetime('now', '-1 day') "
+                            "AND week_end >= ?", (today_date,)
                         ).fetchall()
-                        for event in events:
-                            # Dedup: skip if already sent in the last 10 minutes
-                            recent = db.execute(
-                                "SELECT id FROM signal_log WHERE event_id = ? AND date = ? "
-                                "AND message_type = 'daily_summary' AND success = 1 "
-                                "AND sent_at > datetime('now', '-10 minutes')",
-                                (event['id'], today_date)
-                            ).fetchone()
-                            if not recent:
-                                notify_daily_summary(db, event['id'], today_date)
+                        for ev in recent_events:
+                            auto_nudge_if_due(db, ev['id'])
+                    except Exception as e:
+                        print(f'Auto-nudge error: {e}')
+
+                    if not is_due(now, daily_time):
+                        continue
+                    if not claim_daily_run(db, 'signal_daily_last_run', today_date):
+                        continue
+                    events = db.execute(
+                        'SELECT * FROM events WHERE week_start <= ? AND week_end >= ?',
+                        (today_date, today_date)
+                    ).fetchall()
+                    for event in events:
+                        # Dedup: skip if already sent in the last 10 minutes
+                        recent = db.execute(
+                            "SELECT id FROM signal_log WHERE event_id = ? AND date = ? "
+                            "AND message_type = 'daily_summary' AND success = 1 "
+                            "AND sent_at > datetime('now', '-10 minutes')",
+                            (event['id'], today_date)
+                        ).fetchone()
+                        if not recent:
+                            notify_daily_summary(db, event['id'], today_date)
             except Exception as e:
                 print(f'Signal scheduler error: {e}')
 

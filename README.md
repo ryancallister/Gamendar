@@ -11,6 +11,8 @@ A self-hosted team availability scheduler. Users log in and mark which days they
 - **Weekly events** — admins create events with a date range; the newest event is shown front and centre, older ones are collapsible under "Previous events" (view-only)
 - **Per-day availability** — each user selects Available / Unavailable / Maybe for each day via a dropdown
 - **Optional notes** — users can attach a short note to any day (e.g. "After 8pm only")
+- **Optional times** — users can add a start/end time per day in "My week"; a range that ends before it starts is read as running past midnight (e.g. 9pm–1am)
+- **Time overlay** — the "Everyone" view charts everyone's times for a chosen day as blocks and highlights the window that works for all of them
 - **Live summary row** — shows how many active users are free each day, updates instantly
 - **Roles** — Admin (full access) and User (mark own availability only)
 - **JWT authentication** — sessions persist across browser refreshes; tokens are revoked on logout
@@ -78,7 +80,7 @@ cp .env.example .env
 nano .env   # set SECRET_KEY and APP_PORT
 ```
 
-4. In the Unraid UI → **Docker Compose Manager** → point it at `/mnt/user/appdata/gamendar/docker-compose.yml` and start it.
+4. In the Unraid UI → **Compose Manager Plus** → point it at `/mnt/user/appdata/gamendar/docker-compose.yml` and start it.
 
 ### Option B — Manual Docker run
 
@@ -171,25 +173,32 @@ gamendar/
 │   │   ├── availability.py   # Per-day availability set/get
 │   │   ├── admin.py          # User management
 │   │   ├── discord.py        # Discord webhook settings & triggers
-│   │   └── signal.py         # Signal settings, templates & triggers
-│   ├── static/
-│   │   └── index.html        # Full single-page frontend (served by Flask)
+│   │   ├── signal.py         # Signal settings, templates & triggers
+│   │   └── recurring.py      # Auto-created weekly events
 │   ├── app.py                # Flask entry point, blueprints, security headers
-│   ├── auth_utils.py         # JWT decorators + token blocklist check
+│   ├── auth_utils.py         # JWT decorators, token blocklist, client IP
 │   ├── database.py           # SQLite schema & init
 │   ├── discord_service.py    # Discord message builders & send logic
 │   ├── signal_service.py     # Signal message builders, templates & send logic
+│   ├── scheduler_utils.py    # Shared "is it due yet / has it run today" helpers
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
-│   └── index.html            # Frontend source (copy of backend/static/index.html)
+│   └── index.html            # The single-page frontend — the only copy
 ├── data/                     # SQLite DB — gitignored, created at runtime
 ├── .github/workflows/
 │   └── docker-build.yml      # Builds & pushes single image to ghcr.io on push to main
+├── .dockerignore
 ├── .env.example
 ├── docker-compose.yml
 └── README.md
 ```
+
+The Docker build context is the **repository root** (not `backend/`), because the
+image assembles `backend/` plus `frontend/index.html` into `/app`, where Flask
+serves the page from `/app/static/index.html`. Running `backend/app.py` straight
+from a checkout works too — it falls back to serving `frontend/index.html`
+directly, so there is only ever one copy of the UI to edit.
 
 ---
 
@@ -220,10 +229,14 @@ All endpoints are under `/api/`. Protected routes require `Authorization: Bearer
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/availability/event/:id/set` | User | Set status + note for one day |
+| `POST` | `/api/availability/event/:id/set` | User | Set status, note and optional time for one day |
 | `POST` | `/api/availability/event/:id/bulk` | User | Set status for multiple days |
 | `GET` | `/api/availability/event/:id` | User | Get all availability for event |
 | `GET` | `/api/availability/my` | User | Current user's availability across all events |
+
+`set` and `bulk` take optional `start_time` / `end_time` as `"HH:MM"`. Send both or
+neither; send empty strings to clear. Every save overwrites `note`, `start_time` and
+`end_time`, so clients must resend the values they want to keep.
 
 ### Admin
 

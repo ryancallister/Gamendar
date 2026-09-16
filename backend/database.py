@@ -33,7 +33,8 @@ def init_db(app):
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL DEFAULT 'user',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active INTEGER NOT NULL DEFAULT 1
+                is_active INTEGER NOT NULL DEFAULT 1,
+                signal_number TEXT
             );
 
             CREATE TABLE IF NOT EXISTS events (
@@ -44,6 +45,7 @@ def init_db(app):
                 week_end TEXT NOT NULL,
                 created_by INTEGER NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_recurring INTEGER NOT NULL DEFAULT 0,
                 FOREIGN KEY (created_by) REFERENCES users(id)
             );
 
@@ -54,6 +56,8 @@ def init_db(app):
                 date TEXT NOT NULL,
                 status TEXT NOT NULL DEFAULT 'available',
                 note TEXT,
+                start_time TEXT,
+                end_time TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, event_id, date),
                 FOREIGN KEY (user_id) REFERENCES users(id),
@@ -98,6 +102,19 @@ def init_db(app):
                 FOREIGN KEY (event_id) REFERENCES events(id)
             );
         ''')
+
+        # ── Migrations: add columns to existing databases ──────────
+        def _add_column_if_missing(table, column, definition):
+            cols = [r['name'] for r in db.execute(f'PRAGMA table_info({table})').fetchall()]
+            if column not in cols:
+                db.execute(f'ALTER TABLE {table} ADD COLUMN {column} {definition}')
+                print(f'Migration: added {table}.{column}')
+
+        _add_column_if_missing('users',        'signal_number', 'TEXT')
+        _add_column_if_missing('events',       'is_recurring',  'INTEGER NOT NULL DEFAULT 0')
+        _add_column_if_missing('availability', 'start_time',    'TEXT')
+        _add_column_if_missing('availability', 'end_time',      'TEXT')
+        db.commit()
 
         # Create default admin if none exists
         existing = db.execute('SELECT id FROM users WHERE role = ?', ('admin',)).fetchone()

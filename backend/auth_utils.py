@@ -4,6 +4,21 @@ from flask import request, jsonify, current_app
 from database import get_db
 
 
+def client_ip():
+    """Best-effort originating IP.
+
+    Assumes a trusted reverse proxy (Cloudflare, nginx) sits in front; the
+    forwarded headers are client-supplied and must not be trusted when the
+    app is exposed directly.
+    """
+    return (
+        request.headers.get('CF-Connecting-IP')
+        or request.headers.get('X-Forwarded-For', '').split(',')[0].strip()
+        or request.remote_addr
+        or 'unknown'
+    )
+
+
 def _is_token_blocked(db, user_id, exp):
     jti = f"{user_id}:{exp}"
     row = db.execute('SELECT jti FROM token_blocklist WHERE jti = ?', (jti,)).fetchone()

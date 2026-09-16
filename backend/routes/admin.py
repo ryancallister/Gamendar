@@ -36,7 +36,7 @@ def _validate_user_fields(username=None, email=None, password=None):
 def get_users(current_user):
     db = get_db()
     users = db.execute(
-        'SELECT id, username, email, role, is_active, created_at FROM users ORDER BY username'
+        'SELECT id, username, email, role, is_active, created_at, signal_number FROM users ORDER BY username'
     ).fetchall()
     return jsonify([dict(u) for u in users])
 
@@ -63,6 +63,13 @@ def update_user(current_user, user_id):
     if 'is_active' in data:
         updates.append('is_active = ?')
         params.append(1 if data['is_active'] else 0)
+
+    if 'signal_number' in data:
+        num = str(data['signal_number']).strip()[:20]
+        if num and not re.match(r'^\+?[0-9]{7,20}$', num):
+            return jsonify({'error': 'Signal number must be digits, optionally starting with +'}), 400
+        updates.append('signal_number = ?')
+        params.append(num or None)
 
     if 'password' in data and data['password']:
         err = _validate_user_fields(password=str(data['password']))
@@ -112,11 +119,15 @@ def create_user(current_user):
     if role not in ('admin', 'user'):
         role = 'user'
 
+    signal_number = str(data.get('signal_number', '')).strip()[:20]
+    if signal_number and not re.match(r'^\+?[0-9]{7,20}$', signal_number):
+        return jsonify({'error': 'Signal number must be digits, optionally starting with +'}), 400
+
     db = get_db()
     try:
         db.execute(
-            'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)',
-            (username, email, generate_password_hash(password), role)
+            'INSERT INTO users (username, email, password_hash, role, signal_number) VALUES (?, ?, ?, ?, ?)',
+            (username, email, generate_password_hash(password), role, signal_number or None)
         )
         db.commit()
     except Exception:

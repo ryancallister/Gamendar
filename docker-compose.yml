@@ -1,6 +1,8 @@
 services:
   gamendar:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: gamendar
     restart: unless-stopped
     environment:
