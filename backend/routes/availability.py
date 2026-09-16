@@ -6,6 +6,9 @@ from signal_service import check_and_notify_all_available as signal_check_all_av
 
 availability_bp = Blueprint('availability', __name__)
 
+MAX_NOTE = 200
+VALID_STATUSES = ('available', 'unavailable', 'maybe')
+
 
 @availability_bp.route('/event/<int:event_id>', methods=['GET'])
 @token_required
@@ -29,7 +32,7 @@ def set_availability(current_user, event_id):
         return jsonify({'error': 'date and status required'}), 400
 
     status = data['status']
-    if status not in ('available', 'unavailable', 'maybe'):
+    if status not in VALID_STATUSES:
         return jsonify({'error': 'status must be available, unavailable, or maybe'}), 400
 
     # Verify event exists
@@ -45,7 +48,7 @@ def set_availability(current_user, event_id):
             status = excluded.status,
             note = excluded.note,
             updated_at = CURRENT_TIMESTAMP
-    ''', (current_user['id'], event_id, data['date'], status, str(data.get('note', ''))[:200]))
+    ''', (current_user['id'], event_id, data['date'], status, str(data.get('note') or '')[:MAX_NOTE]))
     db.commit()
 
     try:
@@ -73,11 +76,13 @@ def set_bulk_availability(current_user, event_id):
     if not event:
         return jsonify({'error': 'Event not found'}), 404
 
+    saved = 0
     for entry in data['entries']:
-        if not entry.get('date') or not entry.get('status'):
+        if not isinstance(entry, dict) or not entry.get('date') or not entry.get('status'):
             continue
-        if entry['status'] not in ('available', 'unavailable', 'maybe'):
+        if entry['status'] not in VALID_STATUSES:
             continue
+        # Same note limit as the single-day endpoint.
         db.execute('''
             INSERT INTO availability (user_id, event_id, date, status, note, updated_at)
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -85,10 +90,13 @@ def set_bulk_availability(current_user, event_id):
                 status = excluded.status,
                 note = excluded.note,
                 updated_at = CURRENT_TIMESTAMP
-        ''', (current_user['id'], event_id, entry['date'], entry['status'], entry.get('note', '')))
+        ''', (current_user['id'], event_id, entry['date'], entry['status'],
+              str(entry.get('note') or '')[:MAX_NOTE]))
+        saved += 1
 
     db.commit()
-    return jsonify({'message': f'{len(data["entries"])} entries saved'})
+    return jsonify({'message': f'{saved} entries saved', 'saved': saved,
+                    'skipped': len(data['entries']) - saved})
 
 
 @availability_bp.route('/my', methods=['GET'])

@@ -1,8 +1,8 @@
 from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from database import init_db
+from auth_utils import client_ip
 from routes.auth import auth_bp
 from routes.events import events_bp
 from routes.availability import availability_bp
@@ -19,20 +19,31 @@ if SECRET_KEY == 'change-me-in-production':
     print('FATAL: SECRET_KEY is set to the default value. Set a strong SECRET_KEY environment variable.', file=sys.stderr)
     sys.exit(1)
 
-app = Flask(__name__, static_folder='static', static_url_path='')
+# In the image the UI is copied to backend/static; running from a checkout
+# it still lives at frontend/index.html. Serve whichever is present.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_STATIC_DIR = os.path.join(_HERE, 'static')
+if not os.path.isfile(os.path.join(_STATIC_DIR, 'index.html')):
+    _STATIC_DIR = os.path.join(os.path.dirname(_HERE), 'frontend')
+
+app = Flask(__name__, static_folder=_STATIC_DIR, static_url_path='')
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['DATABASE'] = os.environ.get('DATABASE_PATH', '/data/calendar.db')
 
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # ── Rate limiting ─────────────────────────────────────────────────
+# Keyed on the forwarded client IP so users behind one reverse proxy don't
+# share a single bucket. This is a coarse request-volume cap; the per-account
+# brute-force protection lives in routes/auth.py.
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=client_ip,
     app=app,
     default_limits=[],
     storage_uri='memory://'
 )
 app.config['LIMITER'] = limiter
+limiter.limit('30 per minute')(auth_bp)
 
 # ── Security headers ──────────────────────────────────────────────
 @app.after_request

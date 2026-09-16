@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db
-from auth_utils import token_required
+from auth_utils import token_required, client_ip
 import jwt
 import datetime
 
@@ -12,17 +12,24 @@ MAX_USERNAME = 32
 MAX_EMAIL    = 254
 MAX_PASSWORD = 128
 
+# ── Brute-force protection ────────────────────────────────────────
+MAX_FAILED_LOGINS    = 10
+LOGIN_WINDOW_MINUTES = 15
+
 
 def _rate_limit_login(ip):
-    """Block IP after 10 failed attempts in 15 minutes. Returns (allowed, wait_seconds)."""
+    """Block an IP after too many recent failed attempts. Returns (allowed, wait_seconds)."""
     db = get_db()
-    window = datetime.datetime.utcnow() - datetime.timedelta(minutes=15)
+    # The window must be computed by SQLite: attempted_at is written by
+    # CURRENT_TIMESTAMP ("YYYY-MM-DD HH:MM:SS"), which does not compare
+    # correctly against a Python isoformat string ("YYYY-MM-DDTHH:MM:SS.ffffff").
     count = db.execute(
-        "SELECT COUNT(*) FROM login_attempts WHERE ip = ? AND attempted_at > ?",
-        (ip, window.isoformat())
+        "SELECT COUNT(*) FROM login_attempts "
+        "WHERE ip = ? AND attempted_at > datetime('now', ?)",
+        (ip, f'-{LOGIN_WINDOW_MINUTES} minutes')
     ).fetchone()[0]
-    if count >= 10:
-        return False, 900  # 15 minutes
+    if count >= MAX_FAILED_LOGINS:
+        return False, LOGIN_WINDOW_MINUTES * 60
     return True, 0
 
 
@@ -42,14 +49,11 @@ def _clear_login_attempts(ip):
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    # Get real IP — Cloudflare passes it in CF-Connecting-IP
-    ip = request.headers.get('CF-Connecting-IP') or \
-         request.headers.get('X-Forwarded-For', '').split(',')[0].strip() or \
-         request.remote_addr
+    ip = client_ip()
 
     allowed, wait = _rate_limit_login(ip)
     if not allowed:
-        return jsonify({'error': f'Too many failed attempts. Try again in 15 minutes.'}), 429
+        return jsonify({'error': 'Too many failed attempts. Try again in 15 minutes.'}), 429
 
     data = request.get_json()
     if not data or not data.get('username') or not data.get('password'):

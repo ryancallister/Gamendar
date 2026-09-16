@@ -171,25 +171,32 @@ gamendar/
 │   │   ├── availability.py   # Per-day availability set/get
 │   │   ├── admin.py          # User management
 │   │   ├── discord.py        # Discord webhook settings & triggers
-│   │   └── signal.py         # Signal settings, templates & triggers
-│   ├── static/
-│   │   └── index.html        # Full single-page frontend (served by Flask)
+│   │   ├── signal.py         # Signal settings, templates & triggers
+│   │   └── recurring.py      # Auto-created weekly events
 │   ├── app.py                # Flask entry point, blueprints, security headers
-│   ├── auth_utils.py         # JWT decorators + token blocklist check
+│   ├── auth_utils.py         # JWT decorators, token blocklist, client IP
 │   ├── database.py           # SQLite schema & init
 │   ├── discord_service.py    # Discord message builders & send logic
 │   ├── signal_service.py     # Signal message builders, templates & send logic
+│   ├── scheduler_utils.py    # Shared "is it due yet / has it run today" helpers
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
-│   └── index.html            # Frontend source (copy of backend/static/index.html)
+│   └── index.html            # The single-page frontend — the only copy
 ├── data/                     # SQLite DB — gitignored, created at runtime
 ├── .github/workflows/
 │   └── docker-build.yml      # Builds & pushes single image to ghcr.io on push to main
+├── .dockerignore
 ├── .env.example
 ├── docker-compose.yml
 └── README.md
 ```
+
+The Docker build context is the **repository root** (not `backend/`), because the
+image assembles `backend/` plus `frontend/index.html` into `/app`, where Flask
+serves the page from `/app/static/index.html`. Running `backend/app.py` straight
+from a checkout works too — it falls back to serving `frontend/index.html`
+directly, so there is only ever one copy of the UI to edit.
 
 ---
 

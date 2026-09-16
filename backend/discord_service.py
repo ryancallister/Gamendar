@@ -51,7 +51,8 @@ def build_event_announcement(event):
     start = event['week_start']
     end = event['week_end']
     title = event['title']
-    desc = event.get('description') or ''
+    # event may be a sqlite3.Row (no .get) or a dict, depending on the caller.
+    desc = (event['description'] if 'description' in event.keys() else None) or ''
     return {
         'embeds': [{
             'title': f'📅 New event: {title}',
@@ -185,7 +186,7 @@ def notify_event_announcement(db, event_id):
     if not event:
         return False, 'Event not found'
     url = get_setting(db, 'discord_webhook_url')
-    success, error = send_webhook(url, build_event_announcement(event))
+    success, error = send_webhook(url, build_event_announcement(dict(event)))
     log_discord(db, 'event_created', success, event_id=event_id, error=error)
     return success, error
 

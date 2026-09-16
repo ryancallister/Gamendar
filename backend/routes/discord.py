@@ -5,6 +5,7 @@ from discord_service import (
     get_setting, send_webhook, discord_configured,
     notify_daily_summary, notify_event_announcement, log_discord
 )
+from scheduler_utils import is_due, claim_daily_run
 import threading
 import time
 from datetime import datetime, date
@@ -137,7 +138,6 @@ def start_scheduler(app):
         _scheduler_started = True
 
     def run():
-        last_run_date = None
         while True:
             time.sleep(60)
             try:
@@ -147,24 +147,25 @@ def start_scheduler(app):
                         continue
                     daily_time = get_setting(db, 'discord_daily_time', '09:00')
                     now = datetime.now()
-                    today_str = now.strftime('%H:%M')
                     today_date = now.date().isoformat()
-                    if today_str == daily_time and last_run_date != today_date:
-                        last_run_date = today_date
-                        events = db.execute(
-                            'SELECT * FROM events WHERE week_start <= ? AND week_end >= ?',
-                            (today_date, today_date)
-                        ).fetchall()
-                        for event in events:
-                            # Dedup: skip if already sent in the last 10 minutes
-                            recent = db.execute(
-                                "SELECT id FROM discord_log WHERE event_id = ? AND date = ? "
-                                "AND message_type = 'daily_summary' AND success = 1 "
-                                "AND sent_at > datetime('now', '-10 minutes')",
-                                (event['id'], today_date)
-                            ).fetchone()
-                            if not recent:
-                                notify_daily_summary(db, event['id'], today_date)
+                    if not is_due(now, daily_time):
+                        continue
+                    if not claim_daily_run(db, 'discord_daily_last_run', today_date):
+                        continue
+                    events = db.execute(
+                        'SELECT * FROM events WHERE week_start <= ? AND week_end >= ?',
+                        (today_date, today_date)
+                    ).fetchall()
+                    for event in events:
+                        # Dedup: skip if already sent in the last 10 minutes
+                        recent = db.execute(
+                            "SELECT id FROM discord_log WHERE event_id = ? AND date = ? "
+                            "AND message_type = 'daily_summary' AND success = 1 "
+                            "AND sent_at > datetime('now', '-10 minutes')",
+                            (event['id'], today_date)
+                        ).fetchone()
+                        if not recent:
+                            notify_daily_summary(db, event['id'], today_date)
             except Exception as e:
                 print(f'Discord scheduler error: {e}')
 

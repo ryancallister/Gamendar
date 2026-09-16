@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from database import get_db
 from auth_utils import admin_required
+from scheduler_utils import is_due, claim_daily_run
 import threading
 import time
 from datetime import datetime, date, timedelta
@@ -147,18 +148,16 @@ def start_recurring_scheduler(app):
                     if not recurring_configured(db):
                         continue
 
-                    target_day  = int(get_setting(db, 'recurring_day', '4'))
+                    try:
+                        target_day = int(get_setting(db, 'recurring_day', '4'))
+                    except (TypeError, ValueError):
+                        target_day = 4
                     target_time = get_setting(db, 'recurring_time', '09:00')
 
                     now = datetime.now()
                     if now.weekday() != target_day:
                         continue
-                    if now.strftime('%H:%M') != target_time:
-                        continue
-
-                    # Only once per day
-                    today_iso = now.date().isoformat()
-                    if get_setting(db, 'recurring_last_run') == today_iso:
+                    if not is_due(now, target_time):
                         continue
 
                     admin = db.execute(
@@ -167,9 +166,12 @@ def start_recurring_scheduler(app):
                     if not admin:
                         continue
 
+                    # Only once per day (marker persists across restarts)
+                    today_iso = now.date().isoformat()
+                    if not claim_daily_run(db, 'recurring_last_run', today_iso):
+                        continue
+
                     event, error = create_recurring_event(db, admin['id'])
-                    set_setting(db, 'recurring_last_run', today_iso)
-                    db.commit()
 
                     if event:
                         print(f'Recurring event created: {event["title"]}')

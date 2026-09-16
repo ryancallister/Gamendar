@@ -3,8 +3,20 @@ from database import get_db
 from auth_utils import token_required, admin_required
 from discord_service import notify_event_created
 from signal_service import notify_event_created as signal_notify_event_created
+from datetime import datetime
 
 events_bp = Blueprint('events', __name__)
+
+MAX_TITLE = 100
+MAX_DESCRIPTION = 500
+
+
+def _clean_date(value):
+    """Return an ISO YYYY-MM-DD string, or None if the value isn't a valid date."""
+    try:
+        return datetime.strptime(str(value)[:10], '%Y-%m-%d').date().isoformat()
+    except (ValueError, TypeError):
+        return None
 
 
 @events_bp.route('/', methods=['GET'])
@@ -12,9 +24,9 @@ events_bp = Blueprint('events', __name__)
 def get_events(current_user):
     db = get_db()
     events = db.execute('''
-        SELECT e.*, u.username as created_by_username
+        SELECT e.*, COALESCE(u.username, '[deleted user]') as created_by_username
         FROM events e
-        JOIN users u ON e.created_by = u.id
+        LEFT JOIN users u ON e.created_by = u.id
         ORDER BY e.week_start DESC
     ''').fetchall()
     return jsonify([dict(e) for e in events])
@@ -25,9 +37,9 @@ def get_events(current_user):
 def get_event(current_user, event_id):
     db = get_db()
     event = db.execute('''
-        SELECT e.*, u.username as created_by_username
+        SELECT e.*, COALESCE(u.username, '[deleted user]') as created_by_username
         FROM events e
-        JOIN users u ON e.created_by = u.id
+        LEFT JOIN users u ON e.created_by = u.id
         WHERE e.id = ?
     ''', (event_id,)).fetchone()
     if not event:
@@ -61,10 +73,17 @@ def create_event(current_user):
     if not data or not data.get('title') or not data.get('week_start') or not data.get('week_end'):
         return jsonify({'error': 'Title, week_start, and week_end required'}), 400
 
-    title = str(data['title']).strip()[:100]
-    description = str(data.get('description', '')).strip()[:500]
-    week_start = str(data['week_start'])[:10]
-    week_end = str(data['week_end'])[:10]
+    title = str(data['title']).strip()[:MAX_TITLE]
+    description = str(data.get('description', '')).strip()[:MAX_DESCRIPTION]
+    week_start = _clean_date(data['week_start'])
+    week_end = _clean_date(data['week_end'])
+
+    if not title:
+        return jsonify({'error': 'Title required'}), 400
+    if not week_start or not week_end:
+        return jsonify({'error': 'week_start and week_end must be YYYY-MM-DD dates'}), 400
+    if week_end < week_start:
+        return jsonify({'error': 'week_end must not be before week_start'}), 400
 
     db = get_db()
     cursor = db.execute(
@@ -88,21 +107,28 @@ def create_event(current_user):
 @events_bp.route('/<int:event_id>', methods=['PUT'])
 @admin_required
 def update_event(current_user, event_id):
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     db = get_db()
     event = db.execute('SELECT * FROM events WHERE id = ?', (event_id,)).fetchone()
     if not event:
         return jsonify({'error': 'Event not found'}), 404
 
+    # Apply the same limits as creation rather than writing whatever arrives.
+    title = str(data.get('title', event['title'])).strip()[:MAX_TITLE]
+    description = str(data.get('description') or '').strip()[:MAX_DESCRIPTION]
+    week_start = _clean_date(data.get('week_start', event['week_start']))
+    week_end = _clean_date(data.get('week_end', event['week_end']))
+
+    if not title:
+        return jsonify({'error': 'Title required'}), 400
+    if not week_start or not week_end:
+        return jsonify({'error': 'week_start and week_end must be YYYY-MM-DD dates'}), 400
+    if week_end < week_start:
+        return jsonify({'error': 'week_end must not be before week_start'}), 400
+
     db.execute(
         'UPDATE events SET title = ?, description = ?, week_start = ?, week_end = ? WHERE id = ?',
-        (
-            data.get('title', event['title']),
-            data.get('description', event['description']),
-            data.get('week_start', event['week_start']),
-            data.get('week_end', event['week_end']),
-            event_id
-        )
+        (title, description, week_start, week_end, event_id)
     )
     db.commit()
     return jsonify({'message': 'Event updated'})

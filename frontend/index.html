@@ -887,7 +887,7 @@ async function doLogin() {
   }
 }
 
-function showAuthError(msg) { document.getElementById('auth-error').innerHTML = `<div class="error-msg">${msg}</div>`; }
+function showAuthError(msg) { document.getElementById('auth-error').innerHTML = `<div class="error-msg">${esc(msg)}</div>`; }
 function clearAuthError() { document.getElementById('auth-error').innerHTML = ''; }
 
 async function doLogout() {
@@ -942,7 +942,7 @@ function buildEventCard(ev, isPast) {
     </div>
     <div class="event-info">
       <div class="event-title">${esc(ev.title)}${ev.is_recurring ? ' <span class="badge" style="background:var(--surface3);color:var(--text2);margin-left:4px">Recurring</span>' : ''}</div>
-      <div class="event-meta">${ev.description||'No description'} &nbsp;·&nbsp; Created by ${esc(ev.created_by_username)}${isPast ? ' &nbsp;·&nbsp; <span style="color:var(--text3)">view only</span>' : ''}</div>
+      <div class="event-meta">${ev.description ? esc(ev.description) : 'No description'} &nbsp;·&nbsp; Created by ${esc(ev.created_by_username)}${isPast ? ' &nbsp;·&nbsp; <span style="color:var(--text3)">view only</span>' : ''}</div>
     </div>
   `;
   return card;
@@ -995,7 +995,7 @@ async function loadEvents() {
       el.appendChild(section);
     }
   } catch(e) {
-    el.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    el.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1039,7 +1039,7 @@ async function loadEventDetail(eventId, isPast = false) {
     // "My week" is the default landing view
     setDetailView(isPast ? 'grid' : (detailView || 'form'));
   } catch(e) {
-    document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('week-grid-wrap').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1505,7 +1505,7 @@ async function submitCreateEvent() {
     await api('/events/', { method:'POST', body: JSON.stringify({ title, description: desc, week_start: start, week_end: end }) });
     closeModal(); toast('Event created!'); loadEvents();
   } catch(e) {
-    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1536,7 +1536,7 @@ async function submitEditEvent(id) {
     })});
     closeModal(); toast('Event updated!'); loadEventDetail(id);
   } catch(e) {
-    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1593,7 +1593,7 @@ async function saveRecurringSettings() {
     toast('Recurring settings saved!');
     loadRecurringSettings();
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1605,7 +1605,7 @@ async function createRecurringNow() {
     toast(data.message);
     loadRecurringSettings();
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1647,7 +1647,7 @@ async function saveDiscordSettings() {
     toast('Discord settings saved!');
     loadDiscordSettings();
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1658,7 +1658,7 @@ async function testDiscord() {
     const data = await api('/discord/test', { method: 'POST' });
     toast(data.message);
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1743,7 +1743,7 @@ async function saveSignalSettings() {
     toast('Signal settings saved!');
     loadSignalSettings();
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1754,7 +1754,7 @@ async function testSignal() {
     const data = await api('/signal/test', { method: 'POST' });
     toast(data.message);
   } catch(e) {
-    errEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -1903,11 +1903,14 @@ async function sendSignalNudge(eventId) {
 }
 
 // ─── ADMIN: USERS ────────────────────────────────────────────────
+let adminUsers = [];
+
 async function loadUsers() {
   const tbody = document.getElementById('users-tbody');
   tbody.innerHTML = '<tr><td colspan="6" style="padding:2rem;text-align:center"><div class="spinner"></div></td></tr>';
   try {
     const users = await api('/admin/users');
+    adminUsers = users;
     tbody.innerHTML = '';
     for (const u of users) {
       const tr = document.createElement('tr');
@@ -1918,14 +1921,14 @@ async function loadUsers() {
         <td><span class="role-badge ${u.role}">${u.role}</span></td>
         <td><span class="status-dot ${u.is_active?'active':'inactive'}"></span>${u.is_active?'Active':'Inactive'}</td>
         <td>
-          <button class="btn btn-ghost btn-sm" onclick="openEditUser(${u.id},'${esc(u.username)}','${esc(u.email)}','${u.role}',${u.is_active},'${esc(u.signal_number||'')}')">Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditUser(${u.id})">Edit</button>
           ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">Delete</button>`:''}
         </td>
       `;
       tbody.appendChild(tr);
     }
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="error-msg">${e.message}</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="error-msg">${esc(e.message)}</div></td></tr>`;
   }
 }
 
@@ -1956,13 +1959,16 @@ async function submitCreateUser() {
     })});
     closeModal(); toast('User created!'); loadUsers();
   } catch(e) {
-    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
-function openEditUser(id, username, email, role, isActive, signalNumber) {
+function openEditUser(id) {
+  const u = adminUsers.find(x => x.id === id);
+  if (!u) { toast('User not found — reloading'); loadUsers(); return; }
+  const { username, role, is_active: isActive, signal_number: signalNumber } = u;
   showModal(`
-    <h3>Edit ${username}</h3>
+    <h3>Edit ${esc(username)}</h3>
     <div id="modal-error"></div>
     <div class="form-group"><label>Role</label>
       <select id="m-role"><option value="user"${role==='user'?' selected':''}>User</option><option value="admin"${role==='admin'?' selected':''}>Admin</option></select>
@@ -1970,7 +1976,7 @@ function openEditUser(id, username, email, role, isActive, signalNumber) {
     <div class="form-group"><label>Status</label>
       <select id="m-active"><option value="1"${isActive?' selected':''}>Active</option><option value="0"${!isActive?' selected':''}>Inactive</option></select>
     </div>
-    <div class="form-group"><label>Signal number <span style="color:var(--text3)">(optional, for nudges)</span></label><input type="text" id="m-signal" placeholder="+12345678900" value="${signalNumber||''}"></div>
+    <div class="form-group"><label>Signal number <span style="color:var(--text3)">(optional, for nudges)</span></label><input type="text" id="m-signal" placeholder="+12345678900" value="${esc(signalNumber||'')}"></div>
     <div class="form-group"><label>New password <span style="color:var(--text3)">(leave blank to keep)</span></label><input type="password" id="m-pass" placeholder="min 6 characters"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -1991,7 +1997,7 @@ async function submitEditUser(id) {
     await api(`/admin/users/${id}`, { method:'PUT', body: JSON.stringify(body) });
     closeModal(); toast('User updated!'); loadUsers();
   } catch(e) {
-    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    document.getElementById('modal-error').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
   }
 }
 
@@ -2020,7 +2026,7 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function fmtDate(d) { return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 
 
