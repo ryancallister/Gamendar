@@ -91,6 +91,22 @@ def init_db(app):
                 attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS availability_changes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                date TEXT NOT NULL,
+                old_status TEXT,
+                new_status TEXT NOT NULL,
+                changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                notified_at TIMESTAMP,
+                FOREIGN KEY (event_id) REFERENCES events(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+
+            CREATE INDEX IF NOT EXISTS availability_changes_pending
+                ON availability_changes (notified_at, changed_at);
+
             CREATE TABLE IF NOT EXISTS signal_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 event_id INTEGER,

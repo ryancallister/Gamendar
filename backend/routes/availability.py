@@ -3,6 +3,7 @@ from database import get_db
 from auth_utils import token_required, admin_required
 from discord_service import check_and_notify_all_available
 from signal_service import check_and_notify_all_available as signal_check_all_available
+from signal_service import record_change as signal_record_change
 from datetime import datetime
 
 availability_bp = Blueprint('availability', __name__)
@@ -79,6 +80,14 @@ def set_availability(current_user, event_id):
     except BadTime as e:
         return jsonify({'error': str(e)}), 400
 
+    # Read what it was before the upsert overwrites it — a change report needs
+    # the "from" as well as the "to".
+    prior = db.execute(
+        'SELECT status FROM availability WHERE user_id = ? AND event_id = ? AND date = ?',
+        (current_user['id'], event_id, data['date'])
+    ).fetchone()
+    old_status = prior['status'] if prior else None
+
     db.execute('''
         INSERT INTO availability (user_id, event_id, date, status, note, start_time, end_time, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -92,6 +101,10 @@ def set_availability(current_user, event_id):
           str(data.get('note') or '')[:MAX_NOTE], start_time, end_time))
     db.commit()
 
+    try:
+        signal_record_change(db, event_id, current_user['id'], data['date'], old_status, status)
+    except Exception as e:
+        print(f'Signal change-record error: {e}')
     try:
         check_and_notify_all_available(db, event_id, data['date'])
     except Exception as e:
@@ -118,6 +131,7 @@ def set_bulk_availability(current_user, event_id):
         return jsonify({'error': 'Event not found'}), 404
 
     saved = 0
+    changed = []
     for entry in data['entries']:
         if not isinstance(entry, dict) or not entry.get('date') or not entry.get('status'):
             continue
@@ -128,6 +142,12 @@ def set_bulk_availability(current_user, event_id):
             start_time, end_time = _clean_time_range(entry)
         except BadTime:
             start_time = end_time = None
+
+        prior = db.execute(
+            'SELECT status FROM availability WHERE user_id = ? AND event_id = ? AND date = ?',
+            (current_user['id'], event_id, entry['date'])
+        ).fetchone()
+        changed.append((entry['date'], prior['status'] if prior else None, entry['status']))
 
         # Same note limit as the single-day endpoint.
         db.execute('''
@@ -144,6 +164,13 @@ def set_bulk_availability(current_user, event_id):
         saved += 1
 
     db.commit()
+
+    for date_str, was, now in changed:
+        try:
+            signal_record_change(db, event_id, current_user['id'], date_str, was, now)
+        except Exception as e:
+            print(f'Signal change-record error: {e}')
+
     return jsonify({'message': f'{saved} entries saved', 'saved': saved,
                     'skipped': len(data['entries']) - saved})
 

@@ -19,6 +19,7 @@ This is 99% **AI Generated/Vibe Coded**. I made this for use with my friends as 
 - **JWT authentication** — sessions persist across browser refreshes; tokens are revoked on logout
 - **Discord integration** — webhook-based notifications for new events, daily summaries, and all-available alerts
 - **Signal integration** — same notifications via signal-cli-rest-api; message templates fully editable from the admin panel
+- **Late-change reports** — once the daily summary has gone out, anyone changing today's answer is reported to Signal with who they are and what they switched to, batched behind a configurable delay (default 5 minutes) so a flurry of edits is one message
 - **Security** — bcrypt passwords, rate-limited login (10 attempts / 15 min), input validation, security headers, startup check for default SECRET_KEY
 - Fully self-hosted, no external services required beyond optional Discord/Signal
 
@@ -189,6 +190,21 @@ Set up in **Admin → Signal Integration**:
 | Signal API URL | `http://YOUR-UNRAID-IP:8739` |
 | Sender number | Phone number registered with signal-cli (e.g. `+12345678900`) |
 | Recipient | Group ID from `GET /v1/groups/+12345678900`, starts with `group.` |
+
+Signal adds two message types Discord doesn't have: the **nudge** (a DM to each
+person who hasn't finished their week) and **late changes**.
+
+Late changes answer the problem of a summary going stale: the group is told at
+09:00 that four people are free tonight, someone drops out at 10:30, and nobody
+finds out until they log in. With *Report late changes* enabled, that edit is
+reported — who changed, from what to what, and the recomputed tally.
+
+- It only fires for a day whose summary has already been sent, so editing next
+  Friday is silent until Friday's summary goes out.
+- Edits are batched behind *Wait before reporting* (default 5 minutes), measured
+  from the first edit in the batch, so continuous edits can't hold it back.
+- Someone who flips and flips back inside that window produces no message —
+  only net changes are reported.
 
 Same three automatic message types as Discord. Message templates are fully editable from the admin panel — each template supports placeholders (e.g. `{title}`, `{available_names}`, `{summary_date}`) and includes a live preview with sample data. Templates can be reset to defaults at any time.
 

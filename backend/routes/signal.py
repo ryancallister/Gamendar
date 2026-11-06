@@ -6,7 +6,8 @@ from signal_service import (
     notify_daily_summary, notify_event_announcement,
     TEMPLATE_DEFAULTS, TEMPLATE_PLACEHOLDERS, render_template,
     build_event_announcement, build_daily_summary, build_all_available,
-    notify_nudge, auto_nudge_if_due
+    notify_nudge, auto_nudge_if_due,
+    flush_pending_changes, change_delay_minutes
 )
 from scheduler_utils import is_due, claim_daily_run
 import threading
@@ -29,6 +30,8 @@ def get_signal_settings(current_user):
         'signal_enabled':   get_setting(db, 'signal_enabled', 'false'),
         'signal_daily_time': get_setting(db, 'signal_daily_time', '09:00'),
         'signal_nudge_enabled': get_setting(db, 'signal_nudge_enabled', 'false'),
+        'signal_changes_enabled': get_setting(db, 'signal_changes_enabled', 'false'),
+        'signal_changes_delay': str(change_delay_minutes(db)),
         'signal_configured': signal_configured(db),
     })
 
@@ -39,7 +42,8 @@ def save_signal_settings(current_user):
     data = request.get_json()
     db = get_db()
     allowed = ['signal_api_url', 'signal_sender', 'signal_recipient',
-               'signal_enabled', 'signal_daily_time', 'signal_nudge_enabled']
+               'signal_enabled', 'signal_daily_time', 'signal_nudge_enabled',
+               'signal_changes_enabled', 'signal_changes_delay']
     for key in allowed:
         if key in data:
             db.execute(
@@ -72,7 +76,8 @@ def test_signal(current_user):
 # ── Message templates ─────────────────────────────────────────────
 
 TEMPLATE_KEYS = ['signal_template_event_created', 'signal_template_daily_summary',
-                  'signal_template_all_available', 'signal_template_nudge']
+                  'signal_template_all_available', 'signal_template_nudge',
+                  'signal_template_changes']
 
 
 @signal_bp.route('/templates', methods=['GET'])
@@ -155,6 +160,13 @@ def preview_template(current_user):
         rendered = render_template(
             template, title=sample_event['title'], summary_date='Thu, Jun 25',
             total_count=5, available_names='admin, plat, chubb, Volve, Wank'
+        )
+    elif key == 'signal_template_changes':
+        rendered = render_template(
+            template, title=sample_event['title'], summary_date='Thu, Jun 25',
+            changes='• plat: ✅ available → ❌ unavailable\n• Volve: 🤔 maybe → ✅ available',
+            change_count=2, available_count=3, unavailable_count=1, maybe_count=0,
+            no_response_count=1, total_count=5
         )
     else:  # nudge
         rendered = render_template(
@@ -281,6 +293,14 @@ def start_signal_scheduler(app):
                             auto_nudge_if_due(db, ev['id'])
                     except Exception as e:
                         print(f'Auto-nudge error: {e}')
+
+                    # Late-change reports are time-sensitive and unrelated to
+                    # the daily time, so flush before the daily-summary guards
+                    # below — those `continue` on every cycle but one.
+                    try:
+                        flush_pending_changes(db)
+                    except Exception as e:
+                        print(f'Signal change-flush error: {e}')
 
                     if not is_due(now, daily_time):
                         continue

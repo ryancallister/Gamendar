@@ -77,6 +77,13 @@ DEFAULT_TEMPLATE_ALL_AVAILABLE = (
     "Who: {available_names}"
 )
 
+DEFAULT_TEMPLATE_CHANGES = (
+    "🔄 Plans changed — {summary_date}\n"
+    "{title} · now {available_count}/{total_count} available\n"
+    "\n"
+    "{changes}"
+)
+
 DEFAULT_TEMPLATE_NUDGE = (
     "👋 Hey {username}!\n"
     "You haven't filled out your availability for {title} ({week_start} – {week_end}) yet.\n"
@@ -88,6 +95,7 @@ TEMPLATE_DEFAULTS = {
     'signal_template_daily_summary': DEFAULT_TEMPLATE_DAILY_SUMMARY,
     'signal_template_all_available': DEFAULT_TEMPLATE_ALL_AVAILABLE,
     'signal_template_nudge':         DEFAULT_TEMPLATE_NUDGE,
+    'signal_template_changes':       DEFAULT_TEMPLATE_CHANGES,
 }
 
 TEMPLATE_PLACEHOLDERS = {
@@ -98,6 +106,9 @@ TEMPLATE_PLACEHOLDERS = {
                                        'no_response_names', 'no_response_line'],
     'signal_template_all_available': ['title', 'summary_date', 'total_count', 'available_names'],
     'signal_template_nudge':         ['username', 'title', 'week_start', 'week_end', 'days_missing'],
+    'signal_template_changes':       ['title', 'summary_date', 'changes', 'change_count',
+                                      'available_count', 'unavailable_count', 'maybe_count',
+                                      'no_response_count', 'total_count'],
 }
 
 
@@ -362,6 +373,195 @@ def check_and_notify_all_available(db, event_id, changed_date):
     message   = build_all_available(event, users, changed_date, db=db)
     success, error = send_signal_message(api_url, sender, recipient, message)
     log_signal(db, 'all_available', success, event_id=event_id, date_str=changed_date, error=error)
+
+
+# ── Late changes ──────────────────────────────────────────────────
+# Once the daily summary has gone out, the numbers in it are a promise the
+# group acts on. Someone dropping out an hour later silently invalidates it,
+# so changes made after the summary are reported — batched behind a short
+# delay so a run of edits is one message rather than a stream of them.
+
+STATUS_WORDS = {
+    'available': '✅ available',
+    'unavailable': '❌ unavailable',
+    'maybe': '🤔 maybe',
+}
+
+DEFAULT_CHANGE_DELAY_MINUTES = 5
+
+
+def changes_configured(db):
+    return signal_configured(db) and get_setting(db, 'signal_changes_enabled', 'false') == 'true'
+
+
+def change_delay_minutes(db):
+    """Minutes to wait before reporting, so a flurry of edits is one message."""
+    try:
+        delay = int(get_setting(db, 'signal_changes_delay', DEFAULT_CHANGE_DELAY_MINUTES))
+    except (TypeError, ValueError):
+        return DEFAULT_CHANGE_DELAY_MINUTES
+    return delay if delay >= 0 else DEFAULT_CHANGE_DELAY_MINUTES
+
+
+def summary_already_sent(db, event_id, date_str):
+    """True once today's summary for this event has gone out.
+
+    Keyed on the summary's own date, which is what makes this only fire for
+    the day people were just told about — editing next Friday changes nothing
+    anyone has read yet.
+    """
+    row = db.execute(
+        "SELECT 1 FROM signal_log WHERE event_id = ? AND date = ? "
+        "AND message_type = 'daily_summary' AND success = 1 LIMIT 1",
+        (event_id, date_str)
+    ).fetchone()
+    return row is not None
+
+
+def record_change(db, event_id, user_id, date_str, old_status, new_status):
+    """Queue a post-summary change. No-ops and pre-summary edits are ignored."""
+    if old_status == new_status:
+        return
+    if not changes_configured(db):
+        return
+    if not summary_already_sent(db, event_id, date_str):
+        return
+    db.execute(
+        'INSERT INTO availability_changes (event_id, user_id, date, old_status, new_status) '
+        'VALUES (?, ?, ?, ?, ?)',
+        (event_id, user_id, date_str, old_status, new_status)
+    )
+    db.commit()
+
+
+def _describe(status):
+    return STATUS_WORDS.get(status, 'no response' if not status else status)
+
+
+def collapse_changes(rows):
+    """One line per person: where they started, where they ended up.
+
+    Rows arrive oldest first. Somebody who flips out and back within the delay
+    has not actually changed anything, so they drop out entirely rather than
+    generating noise.
+    """
+    first_old, last_new, order = {}, {}, []
+    for row in rows:
+        key = row['user_id']
+        if key not in first_old:
+            first_old[key] = row['old_status']
+            order.append((key, row['username']))
+        last_new[key] = row['new_status']
+
+    net = []
+    for user_id, username in order:
+        if first_old[user_id] == last_new[user_id]:
+            continue
+        net.append({
+            'username': username,
+            'old_status': first_old[user_id],
+            'new_status': last_new[user_id],
+        })
+    return net
+
+
+def build_changes_message(db, event, date_str, changes):
+    users = db.execute('SELECT * FROM users WHERE is_active = 1').fetchall()
+    rows = db.execute(
+        'SELECT user_id, status FROM availability WHERE event_id = ? AND date = ?',
+        (event['id'], date_str)
+    ).fetchall()
+    active_ids = {u['id'] for u in users}
+    by_status = {s: 0 for s in ('available', 'unavailable', 'maybe')}
+    responded = 0
+    for row in rows:
+        if row['user_id'] in active_ids and row['status'] in by_status:
+            by_status[row['status']] += 1
+            responded += 1
+
+    lines = '\n'.join(
+        f"• {c['username']}: {_describe(c['old_status'])} → {_describe(c['new_status'])}"
+        for c in changes
+    )
+
+    template = get_setting(db, 'signal_template_changes') or DEFAULT_TEMPLATE_CHANGES
+    return render_template(
+        template,
+        title=event['title'],
+        summary_date=fmt_date(date_str),
+        changes=lines,
+        change_count=len(changes),
+        available_count=by_status['available'],
+        unavailable_count=by_status['unavailable'],
+        maybe_count=by_status['maybe'],
+        no_response_count=max(len(users) - responded, 0),
+        total_count=len(users),
+    )
+
+
+def flush_pending_changes(db):
+    """Send any queued changes whose batch has waited out the delay.
+
+    The delay is measured from the oldest unsent change in a batch, not the
+    newest, so continuous edits can't hold a notification back indefinitely.
+    """
+    if not changes_configured(db):
+        return 0
+
+    delay = change_delay_minutes(db)
+    ready = db.execute(
+        "SELECT event_id, date, MIN(changed_at) AS oldest FROM availability_changes "
+        "WHERE notified_at IS NULL GROUP BY event_id, date "
+        "HAVING MIN(changed_at) <= datetime('now', ?)",
+        (f'-{delay} minutes',)
+    ).fetchall()
+
+    sent = 0
+    for batch in ready:
+        rows = db.execute(
+            'SELECT c.*, u.username FROM availability_changes c '
+            'JOIN users u ON c.user_id = u.id '
+            'WHERE c.notified_at IS NULL AND c.event_id = ? AND c.date = ? '
+            'ORDER BY c.changed_at, c.id',
+            (batch['event_id'], batch['date'])
+        ).fetchall()
+        if not rows:
+            continue
+
+        # Claim them first: a send that throws must not leave the batch to be
+        # retried forever, and the log row records whether it actually went.
+        db.execute(
+            'UPDATE availability_changes SET notified_at = CURRENT_TIMESTAMP '
+            'WHERE notified_at IS NULL AND event_id = ? AND date = ?',
+            (batch['event_id'], batch['date'])
+        )
+        db.commit()
+
+        changes = collapse_changes(rows)
+        if not changes:
+            continue  # everyone ended up back where they started
+
+        event = db.execute('SELECT * FROM events WHERE id = ?', (batch['event_id'],)).fetchone()
+        if not event:
+            continue
+
+        try:
+            message = build_changes_message(db, event, batch['date'], changes)
+            success, error = send_signal_message(
+                get_setting(db, 'signal_api_url'),
+                get_setting(db, 'signal_sender'),
+                get_setting(db, 'signal_recipient'),
+                message,
+            )
+        except Exception as e:
+            success, error = False, str(e)
+
+        log_signal(db, 'changes', success, event_id=batch['event_id'],
+                   date_str=batch['date'], error=error)
+        if success:
+            sent += 1
+
+    return sent
 
 
 def notify_event_announcement(db, event_id):
