@@ -912,12 +912,22 @@
               <input type="checkbox" id="sig-nudge-enabled" style="width:18px;height:18px;accent-color:var(--accent)">
               <span>Auto-nudge users who haven't responded <span style="color:var(--text3);font-size:12px">(fires 24h after an event is created)</span></span>
             </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="sig-changes-enabled" style="width:18px;height:18px;accent-color:var(--accent)">
+              <span>Report late changes <span style="color:var(--text3);font-size:12px">(when someone changes today's answer after the daily summary has gone out)</span></span>
+            </label>
+            <div class="form-group" style="margin-left:28px;max-width:260px">
+              <label>Wait before reporting <span style="color:var(--text3);font-size:12px">(minutes)</span></label>
+              <input type="number" id="sig-changes-delay" min="0" max="120" value="5">
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">Changes made in this window are batched into one message.</div>
+            </div>
           </div>
           <div style="margin-top:1rem">
             <p class="section-title" style="margin-bottom:0.5rem">What gets posted automatically</p>
             <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)">
               <div>📅 <strong style="color:var(--text)">New event</strong> — when an admin creates a new weekly event</div>
               <div>📋 <strong style="color:var(--text)">Daily summary</strong> — who's available today, posted at the configured time</div>
+              <div>🔄 <strong style="color:var(--text)">Late changes</strong> — who changed today's answer after that summary went out</div>
               <div>🎉 <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
               <div>👋 <strong style="color:var(--text)">Nudge</strong> — DMs each user with an incomplete week, 24h after event creation</div>
             </div>
@@ -2194,6 +2204,8 @@ async function loadSignalSettings() {
     document.getElementById('sig-daily-time').value = data.signal_daily_time || '09:00';
     document.getElementById('sig-enabled').checked = data.signal_enabled === 'true';
     document.getElementById('sig-nudge-enabled').checked = data.signal_nudge_enabled === 'true';
+    document.getElementById('sig-changes-enabled').checked = data.signal_changes_enabled === 'true';
+    document.getElementById('sig-changes-delay').value = data.signal_changes_delay ?? '5';
     const badge = document.getElementById('signal-status-badge');
     if (data.signal_configured) {
       badge.innerHTML = '<span class="badge" style="background:var(--green-bg);color:var(--green)">Connected</span>';
@@ -2218,7 +2230,9 @@ async function saveSignalSettings() {
         signal_recipient: document.getElementById('sig-recipient').value.trim(),
         signal_daily_time: document.getElementById('sig-daily-time').value,
         signal_enabled:   document.getElementById('sig-enabled').checked ? 'true' : 'false',
-        signal_nudge_enabled: document.getElementById('sig-nudge-enabled').checked ? 'true' : 'false'
+        signal_nudge_enabled: document.getElementById('sig-nudge-enabled').checked ? 'true' : 'false',
+        signal_changes_enabled: document.getElementById('sig-changes-enabled').checked ? 'true' : 'false',
+        signal_changes_delay: document.getElementById('sig-changes-delay').value || '5'
       })
     });
     toast('Signal settings saved!');
@@ -2264,6 +2278,7 @@ const TEMPLATE_LABELS = {
   signal_template_daily_summary:  { icon: '📋', title: 'Daily summary' },
   signal_template_all_available:  { icon: '🎉', title: 'Everyone available' },
   signal_template_nudge:          { icon: '👋', title: 'Nudge (DM to individual user)' },
+  signal_template_changes:        { icon: '🔄', title: 'Late changes' },
 };
 
 async function loadSignalTemplates() {
