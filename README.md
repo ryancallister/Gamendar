@@ -17,6 +17,7 @@ This is 99% **AI Generated/Vibe Coded**. I made this for use with my friends as 
 - **Live summary row** — shows how many active users are free each day, updates instantly
 - **Roles** — Admin (full access) and User (mark own availability only)
 - **JWT authentication** — sessions persist across browser refreshes; tokens are revoked on logout
+- **Optional single sign-on** — behind Cloudflare Access, people are signed in with their Cloudflare login (matched by email); password sign-in still works
 - **Discord integration** — webhook-based notifications for new events, daily summaries, and all-available alerts
 - **Signal integration** — same notifications via signal-cli-rest-api; message templates fully editable from the admin panel
 - **Late-change reports** — once the daily summary has gone out, anyone changing today's answer is reported to Signal with who they are and what they switched to, batched behind a configurable delay (default 5 minutes) so a flurry of edits is one message
@@ -151,6 +152,8 @@ The SQLite database in `./data/` is preserved across rebuilds.
 | `APP_PORT` | `3005` | Host port the app listens on |
 | `FLASK_DEBUG` | `false` | Enable Flask debug mode (dev only) |
 | `DATABASE_PATH` | `/data/calendar.db` | Path to SQLite database inside container |
+| `CF_ACCESS_TEAM_DOMAIN` | *(unset)* | Optional. Cloudflare Zero Trust team domain, e.g. `yourteam.cloudflareaccess.com`. Normally set in Admin → Single Sign-On instead; if set here it overrides that. |
+| `CF_ACCESS_AUD` | *(unset)* | Optional. The Access application's Application Audience (AUD) tag. Same as above. |
 
 **About `SECRET_KEY`:** it signs login tokens, so changing it logs everyone out.
 If you don't set one, the app generates 32 random bytes on first start and writes
@@ -160,6 +163,31 @@ want to manage the secret yourself — for example to share sessions across host
 or to keep it in a secrets manager. If a key can't be generated *and stored*, the
 app exits with an explanatory error rather than silently using a throwaway key
 that would log everyone out on every restart.
+
+---
+
+## Single sign-on with Cloudflare Access (optional)
+
+If Gamendar is published through a Cloudflare Tunnel and protected by a
+Cloudflare Access application, people can skip Gamendar's own login.
+
+1. In Cloudflare Zero Trust, create a **Self-hosted** Access application (destination **Public DNS**) for Gamendar's hostname, with an Allow policy for your users.
+2. Copy its **Application Audience (AUD) Tag**, and your **team domain** (Zero Trust → Settings).
+3. Paste both into **Admin → Single Sign-On** and save. The section then shows whether your own visit was recognised.
+   (Alternatively set the `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` environment variables; they take precedence and lock the admin fields.)
+4. Make sure each user's email in **Admin → Edit user** is the email they log in to Cloudflare with.
+
+How it works: Cloudflare adds a signed token (`Cf-Access-Jwt-Assertion`) to every
+request it lets through. When the browser has no Gamendar session, it calls
+`POST /api/auth/sso`; the server verifies that token's RS256 signature against
+`https://<team domain>/cdn-cgi/access/certs`, checks its audience, issuer and expiry,
+and issues a normal Gamendar session for the active user with the same email.
+The plain `Cf-Access-Authenticated-User-Email` header is never trusted, since
+anyone who can reach the container port directly could set it.
+
+- Password sign-in keeps working, e.g. on the LAN address, which bypasses Cloudflare.
+- Signing out of an SSO session also signs out of Cloudflare Access (`/cdn-cgi/access/logout`).
+- If the Cloudflare session expires while the page is open, the page reloads so Cloudflare can show its login.
 
 ---
 
@@ -225,6 +253,7 @@ gamendar/
 │   │   └── recurring.py      # Auto-created weekly events
 │   ├── app.py                # Flask entry point, blueprints, security headers
 │   ├── auth_utils.py         # JWT decorators, token blocklist, client IP
+│   ├── access_sso.py         # Optional Cloudflare Access single sign-on
 │   ├── database.py           # SQLite schema & init
 │   ├── discord_service.py    # Discord message builders & send logic
 │   ├── signal_service.py     # Signal message builders, templates & send logic
@@ -262,6 +291,7 @@ All endpoints are under `/api/`. Protected routes require `Authorization: Bearer
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | `POST` | `/api/auth/login` | — | Login, returns JWT token |
+| `POST` | `/api/auth/sso` | Cloudflare Access | Exchange a verified Cloudflare Access login for a JWT token (when SSO is set up) |
 | `POST` | `/api/auth/logout` | User | Revokes current token |
 | `GET` | `/api/auth/me` | User | Current user info |
 | `POST` | `/api/auth/change-password` | User | Change own password |
@@ -295,8 +325,10 @@ neither; send empty strings to clear. Every save overwrites `note`, `start_time`
 |---|---|---|---|
 | `GET` | `/api/admin/users` | Admin | List all users |
 | `POST` | `/api/admin/users` | Admin | Create user |
-| `PUT` | `/api/admin/users/:id` | Admin | Update role / status / password |
+| `PUT` | `/api/admin/users/:id` | Admin | Update email / role / status / password |
 | `DELETE` | `/api/admin/users/:id` | Admin | Delete user |
+| `GET` | `/api/admin/sso` | Admin | Single sign-on settings and whether this request was recognised |
+| `POST` | `/api/admin/sso` | Admin | Save the Cloudflare Access team domain and AUD tag (both blank = off) |
 
 ### Discord
 

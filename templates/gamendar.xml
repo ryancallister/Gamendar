@@ -23,4 +23,12 @@
   <Config Name="SECRET_KEY" Target="SECRET_KEY" Default="" Mode=""
           Description="Optional. Leave blank and a strong key is generated into the data volume on first start. Set one only if you want to manage it yourself."
           Type="Variable" Display="always" Required="false" Mask="true"></Config>
+
+  <Config Name="CF_ACCESS_TEAM_DOMAIN" Target="CF_ACCESS_TEAM_DOMAIN" Default="" Mode=""
+          Description="Optional. Usually set in Admin - Single Sign-On instead. If set here it overrides that: your Cloudflare Zero Trust team domain, e.g. yourteam.cloudflareaccess.com. Needs CF_ACCESS_AUD too."
+          Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+
+  <Config Name="CF_ACCESS_AUD" Target="CF_ACCESS_AUD" Default="" Mode=""
+          Description="Optional. Usually set in Admin - Single Sign-On instead. The Access application's Application Audience (AUD) tag."
+          Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
 </Container>

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db
 from auth_utils import token_required, client_ip
+import access_sso
 import jwt
 import datetime
 
@@ -74,21 +75,47 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
 
     _clear_login_attempts(ip)
+    return jsonify(_session_for(user))
 
+
+def _session_for(user, sso=False):
     token = jwt.encode({
         'user_id': user['id'],
         'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)
     }, current_app.config['SECRET_KEY'], algorithm='HS256')
-
-    return jsonify({
+    return {
         'token': token,
+        'sso': sso,
         'user': {
             'id': user['id'],
             'username': user['username'],
             'email': user['email'],
             'role': user['role']
         }
-    })
+    }
+
+
+@auth_bp.route('/sso', methods=['POST'])
+def sso_login():
+    """Exchange a verified Cloudflare Access identity for a normal Gamendar session.
+
+    The frontend calls this when it has no token. See access_sso.py.
+    """
+    if not access_sso.enabled():
+        return jsonify({'error': 'Single sign-on is not set up', 'enabled': False}), 404
+    email = access_sso.verified_email(request)
+    if not email:
+        return jsonify({'error': 'No Cloudflare Access sign-in on this request', 'enabled': True}), 401
+    user = get_db().execute(
+        'SELECT * FROM users WHERE lower(email) = ? AND is_active = 1', (email,)
+    ).fetchone()
+    if not user:
+        return jsonify({
+            'error': f'You are signed in to Cloudflare as {email}, but no active Gamendar account uses that email. '
+                     'Ask an admin to set it on your account, or sign in with your password.',
+            'enabled': True, 'access_email': email,
+        }), 403
+    return jsonify(_session_for(user, sso=True))
 
 
 @auth_bp.route('/logout', methods=['POST'])

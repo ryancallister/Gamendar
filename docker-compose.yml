@@ -10,6 +10,8 @@ services:
       - SECRET_KEY=${SECRET_KEY:-}
       - DATABASE_PATH=/data/calendar.db
       - FLASK_DEBUG=${FLASK_DEBUG:-false}
+      - CF_ACCESS_TEAM_DOMAIN=${CF_ACCESS_TEAM_DOMAIN:-}
+      - CF_ACCESS_AUD=${CF_ACCESS_AUD:-}
     volumes:
       - ./data:/data
     ports:

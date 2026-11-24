@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from database import init_db
 from auth_utils import client_ip
+import access_sso
 import secret_key as secret_key_mod
 from routes.auth import auth_bp
 from routes.events import events_bp
@@ -59,6 +60,10 @@ def set_security_headers(response):
     return response
 
 init_db(app)
+
+with app.app_context():
+    if access_sso.enabled():
+        print(f'Cloudflare Access single sign-on is on for {access_sso.settings()[0]}', flush=True)
 
 app.register_blueprint(auth_bp,          url_prefix='/api/auth')
 app.register_blueprint(events_bp,        url_prefix='/api/events')

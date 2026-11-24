@@ -780,6 +780,36 @@
 
       <div style="margin-top:2.5rem">
         <div class="page-header" style="margin-bottom:1.25rem">
+          <div><h2>Single Sign-On</h2><p>Sign people in with their Cloudflare Access login</p></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="sso-status-badge"></span>
+            <button class="btn btn-primary btn-sm" onclick="saveSsoSettings()" style="width:auto" id="sso-save">Save</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="padding:1.5rem">
+          <div id="sso-settings-error"></div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">
+            If Gamendar is behind a Cloudflare Access application, people whose Cloudflare login email matches their email here are signed in automatically.
+            Leave both fields blank to turn this off. Password sign-in keeps working either way.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <div class="form-group">
+              <label>Team domain</label>
+              <input type="text" id="sso-team" placeholder="yourteam.cloudflareaccess.com" autocomplete="off" autocapitalize="off">
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">Cloudflare Zero Trust → Settings</div>
+            </div>
+            <div class="form-group">
+              <label>Application Audience (AUD) tag</label>
+              <input type="text" id="sso-aud" placeholder="64 hex characters" autocomplete="off" autocapitalize="off" style="font-family:var(--mono);font-size:13px">
+              <div style="margin-top:6px;font-size:12px;color:var(--text3)">On the Access application's overview page</div>
+            </div>
+          </div>
+          <div id="sso-status" style="font-size:13px;color:var(--text2)"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:2.5rem">
+        <div class="page-header" style="margin-bottom:1.25rem">
           <div><h2>Recurring Events</h2><p>Automatically create a new weekly event on a schedule</p></div>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="recurring-status-badge"></span>
@@ -962,10 +992,28 @@ let liveAvailability = {}; // date -> { userId -> status }
 let detailDirty = false;   // local edits not yet reflected in the rendered views
 
 // ─── API HELPERS ───────────────────────────────────────────────
+// Behind Cloudflare Access, an expired Access session turns API calls into a
+// redirect to Cloudflare's login page, which fetch() can't follow. Reload the
+// page instead so Cloudflare can show its login. (The API never redirects.)
+// The sessionStorage stamp stops a reload loop if something else is wrong.
+function accessExpired() {
+  const last = +sessionStorage.getItem('avail_reauth') || 0;
+  if (Date.now() - last > 30000) { sessionStorage.setItem('avail_reauth', Date.now()); location.reload(); }
+  return new Error('Your sign-in expired. Reload the page to sign in again.');
+}
+
+async function apiFetch(path, opts = {}) {
+  let res;
+  try { res = await fetch(API + path, { redirect: 'manual', ...opts }); }
+  catch (e) { throw navigator.onLine ? accessExpired() : new Error("You're offline"); }
+  if (res.type === 'opaqueredirect') throw accessExpired();
+  return res;
+}
+
 async function api(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(API + path, { headers, ...opts });
+  const res = await apiFetch(path, { headers, ...opts });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
@@ -983,6 +1031,7 @@ async function doLogin() {
     });
     token = data.token;
     localStorage.setItem('avail_token', token);
+    localStorage.removeItem('avail_sso');
     currentUser = data.user;
     enterApp();
   } catch(e) {
@@ -995,20 +1044,56 @@ async function doLogin() {
 function showAuthError(msg) { document.getElementById('auth-error').innerHTML = `<div class="error-msg">${esc(msg)}</div>`; }
 function clearAuthError() { document.getElementById('auth-error').innerHTML = ''; }
 
-async function doLogout() {
+// Single sign-on through Cloudflare Access (optional, see backend/access_sso.py).
+// Returns true when Cloudflare vouched for an account and we now have a token.
+async function trySso() {
   try {
-    await api('/auth/logout', { method: 'POST' });
-  } catch(e) { /* ignore — clear client side regardless */ }
-  stopEventPolling();
-  token = null; currentUser = null;
-  localStorage.removeItem('avail_token');
+    const res = await apiFetch('/auth/sso', { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.token) {
+      token = data.token; currentUser = data.user;
+      localStorage.setItem('avail_token', token);
+      localStorage.setItem('avail_sso', '1');
+      return true;
+    }
+    if (res.status === 403 && data.error) showAuthError(data.error);
+  } catch(e) { /* fall back to the password form */ }
+  return false;
+}
+
+function showAuthScreen() {
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
 }
 
+function clearSession() {
+  stopEventPolling();
+  token = null; currentUser = null;
+  localStorage.removeItem('avail_token');
+  localStorage.removeItem('avail_sso');
+}
+
+async function doLogout() {
+  const viaSso = localStorage.getItem('avail_sso') === '1';
+  try {
+    await api('/auth/logout', { method: 'POST' });
+  } catch(e) { /* ignore — clear client side regardless */ }
+  clearSession();
+  // Signed in through Cloudflare: end that session too, or the next visit signs straight back in.
+  if (viaSso) { location.href = '/cdn-cgi/access/logout'; return; }
+  showAuthScreen();
+}
+
 async function enterApp() {
   if (!currentUser) {
-    try { currentUser = await api('/auth/me'); } catch(e) { doLogout(); return; }
+    try { currentUser = await api('/auth/me'); }
+    catch(e) {
+      // Token expired or revoked: Cloudflare may still vouch for us, otherwise show the login form.
+      clearSession();
+      if (await trySso()) return enterApp();
+      showAuthScreen();
+      return;
+    }
   }
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
@@ -1032,7 +1117,7 @@ function showPage(name) {
   const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
   if (navEl) navEl.classList.add('active');
   if (name === 'events') loadEvents();
-  if (name === 'admin') { loadUsers(); loadRecurringSettings(); loadDiscordSettings(); loadSignalSettings(); loadSignalTemplates(); }
+  if (name === 'admin') { loadUsers(); loadSsoSettings(); loadRecurringSettings(); loadDiscordSettings(); loadSignalSettings(); loadSignalTemplates(); }
 }
 
 // ─── EVENTS ─────────────────────────────────────────────────────
@@ -2101,6 +2186,44 @@ async function createRecurringNow() {
 }
 
 // ─── DISCORD ─────────────────────────────────────────────────────
+// ─── SINGLE SIGN-ON ─────────────────────────────────────────────
+function renderSso(d) {
+  const team = document.getElementById('sso-team'), aud = document.getElementById('sso-aud');
+  team.value = d.team_domain || ''; aud.value = d.aud || '';
+  team.disabled = aud.disabled = d.env_locked;
+  document.getElementById('sso-save').style.display = d.env_locked ? 'none' : '';
+  document.getElementById('sso-status-badge').innerHTML = d.enabled
+    ? '<span class="badge" style="background:var(--green-bg);color:var(--green)">On</span>'
+    : '<span class="badge" style="background:var(--surface3);color:var(--text2)">Off</span>';
+  let status;
+  if (!d.enabled) status = '';
+  else if (d.access_email && d.matched_user) status = `✅ Working: Cloudflare says you're <strong style="color:var(--text)">${esc(d.access_email)}</strong>, which is the account <strong style="color:var(--text)">${esc(d.matched_user)}</strong>.`;
+  else if (d.access_email) status = `⚠️ Cloudflare says you're <strong style="color:var(--text)">${esc(d.access_email)}</strong>, but no active user here has that email.`;
+  else if (d.header_seen) status = `<span style="color:var(--red)">❌ Cloudflare sent a sign-in token but it didn't verify. Check that the team domain and AUD tag belong to this application.</span>`;
+  else status = "ℹ️ This visit didn't come through Cloudflare Access (normal on the LAN address).";
+  if (d.env_locked) status += `${status ? '<br>' : ''}🔒 Set by the <code>CF_ACCESS_TEAM_DOMAIN</code> / <code>CF_ACCESS_AUD</code> environment variables. Remove them from the container to manage this here.`;
+  document.getElementById('sso-status').innerHTML = status;
+}
+
+async function loadSsoSettings() {
+  try { renderSso(await api('/admin/sso')); }
+  catch(e) { console.error('Failed to load SSO settings', e); }
+}
+
+async function saveSsoSettings() {
+  const errEl = document.getElementById('sso-settings-error');
+  errEl.innerHTML = '';
+  try {
+    renderSso(await api('/admin/sso', { method: 'POST', body: JSON.stringify({
+      team_domain: document.getElementById('sso-team').value,
+      aud: document.getElementById('sso-aud').value
+    })}));
+    toast('Single sign-on settings saved!');
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+  }
+}
+
 async function loadDiscordSettings() {
   try {
     const data = await api('/discord/settings');
@@ -2462,10 +2585,11 @@ async function submitCreateUser() {
 function openEditUser(id) {
   const u = adminUsers.find(x => x.id === id);
   if (!u) { toast('User not found — reloading'); loadUsers(); return; }
-  const { username, role, is_active: isActive, signal_number: signalNumber } = u;
+  const { username, email, role, is_active: isActive, signal_number: signalNumber } = u;
   showModal(`
     <h3>Edit ${esc(username)}</h3>
     <div id="modal-error"></div>
+    <div class="form-group"><label>Email <span style="color:var(--text3)">(must match their Cloudflare login for single sign-on)</span></label><input type="email" id="m-email" value="${esc(email||'')}"></div>
     <div class="form-group"><label>Role</label>
       <select id="m-role"><option value="user"${role==='user'?' selected':''}>User</option><option value="admin"${role==='admin'?' selected':''}>Admin</option></select>
     </div>
@@ -2483,6 +2607,7 @@ function openEditUser(id) {
 
 async function submitEditUser(id) {
   const body = {
+    email: document.getElementById('m-email').value,
     role: document.getElementById('m-role').value,
     is_active: parseInt(document.getElementById('m-active').value),
     signal_number: document.getElementById('m-signal').value
@@ -2560,11 +2685,10 @@ function fmtDateShort(iso) {
 }
 
 // ─── BOOT ────────────────────────────────────────────────────────
-if (token) {
-  enterApp();
-} else {
-  document.getElementById('auth-screen').style.display = 'flex';
-}
+(async () => {
+  if (token || await trySso()) enterApp();
+  else showAuthScreen();
+})();
 </script>
 </body>
 </html>
