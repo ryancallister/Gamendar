@@ -346,19 +346,25 @@ def notify_daily_summary(db, event_id, summary_date):
     return success, error
 
 
-def check_and_notify_all_available(db, event_id, changed_date):
-    if not signal_configured(db):
-        return
+def everyone_available(db, event_id, changed_date):
+    """All active users marked available that day, or None. Shared by channels."""
     users = db.execute('SELECT * FROM users WHERE is_active = 1').fetchall()
     if not users:
-        return
+        return None
     active_ids = {u['id'] for u in users}
     rows = db.execute(
         'SELECT user_id, status FROM availability WHERE event_id = ? AND date = ?',
         (event_id, changed_date)
     ).fetchall()
     avail_ids = {r['user_id'] for r in rows if r['status'] == 'available' and r['user_id'] in active_ids}
-    if avail_ids != active_ids:
+    return users if avail_ids == active_ids else None
+
+
+def check_and_notify_all_available(db, event_id, changed_date):
+    if not signal_configured(db):
+        return
+    users = everyone_available(db, event_id, changed_date)
+    if users is None:
         return
     already = db.execute(
         'SELECT id FROM signal_log WHERE event_id = ? AND date = ? AND message_type = ? AND success = 1',
@@ -390,8 +396,14 @@ STATUS_WORDS = {
 DEFAULT_CHANGE_DELAY_MINUTES = 5
 
 
+def changes_enabled(db):
+    """The admin setting, independent of which channels can deliver it."""
+    return get_setting(db, 'signal_changes_enabled', 'false') == 'true'
+
+
 def changes_configured(db):
-    return signal_configured(db) and get_setting(db, 'signal_changes_enabled', 'false') == 'true'
+    """True when Signal specifically can deliver late-change reports."""
+    return signal_configured(db) and changes_enabled(db)
 
 
 def change_delay_minutes(db):
@@ -415,6 +427,13 @@ def summary_already_sent(db, event_id, date_str):
         "AND message_type = 'daily_summary' AND success = 1 LIMIT 1",
         (event_id, date_str)
     ).fetchone()
+    if row is not None:
+        return True
+    row = db.execute(
+        "SELECT 1 FROM push_log WHERE event_id = ? AND date = ? "
+        "AND message_type = 'daily_summary' LIMIT 1",
+        (event_id, date_str)
+    ).fetchone()
     return row is not None
 
 
@@ -422,7 +441,7 @@ def record_change(db, event_id, user_id, date_str, old_status, new_status):
     """Queue a post-summary change. No-ops and pre-summary edits are ignored."""
     if old_status == new_status:
         return
-    if not changes_configured(db):
+    if not changes_enabled(db):
         return
     if not summary_already_sent(db, event_id, date_str):
         return
@@ -505,7 +524,7 @@ def flush_pending_changes(db):
     The delay is measured from the oldest unsent change in a batch, not the
     newest, so continuous edits can't hold a notification back indefinitely.
     """
-    if not changes_configured(db):
+    if not changes_enabled(db):
         return 0
 
     delay = change_delay_minutes(db)
@@ -545,21 +564,30 @@ def flush_pending_changes(db):
         if not event:
             continue
 
-        try:
-            message = build_changes_message(db, event, batch['date'], changes)
-            success, error = send_signal_message(
-                get_setting(db, 'signal_api_url'),
-                get_setting(db, 'signal_sender'),
-                get_setting(db, 'signal_recipient'),
-                message,
-            )
-        except Exception as e:
-            success, error = False, str(e)
+        if signal_configured(db):
+            try:
+                message = build_changes_message(db, event, batch['date'], changes)
+                success, error = send_signal_message(
+                    get_setting(db, 'signal_api_url'),
+                    get_setting(db, 'signal_sender'),
+                    get_setting(db, 'signal_recipient'),
+                    message,
+                )
+            except Exception as e:
+                success, error = False, str(e)
 
-        log_signal(db, 'changes', success, event_id=batch['event_id'],
-                   date_str=batch['date'], error=error)
-        if success:
-            sent += 1
+            log_signal(db, 'changes', success, event_id=batch['event_id'],
+                       date_str=batch['date'], error=error)
+            if success:
+                sent += 1
+
+        # Push is a separate channel: it reports the same batch even when
+        # Signal is not set up at all.
+        try:
+            import push_triggers
+            push_triggers.late_changes(db, event, batch['date'], changes)
+        except Exception as e:
+            print(f'Push late-change error: {e}')
 
     return sent
 

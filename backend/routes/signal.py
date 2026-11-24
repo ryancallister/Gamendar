@@ -10,6 +10,8 @@ from signal_service import (
     flush_pending_changes, change_delay_minutes
 )
 from scheduler_utils import is_due, claim_daily_run
+import push_service
+import push_triggers
 import threading
 import time
 from datetime import datetime, date
@@ -276,23 +278,29 @@ def start_signal_scheduler(app):
             try:
                 with app.app_context():
                     db = get_db()
-                    if not signal_configured(db):
+                    signal_on = signal_configured(db)
+                    # Push is its own channel — this loop has to keep running
+                    # for groups that use notifications and no Signal.
+                    push_on = push_service.available() and push_service.anyone_subscribed(db)
+                    if not signal_on and not push_on:
                         continue
                     daily_time = get_setting(db, 'signal_daily_time', '09:00')
                     now = datetime.now()
                     today_date = now.date().isoformat()
 
                     # Auto-nudge: check every cycle for events created >24h ago
-                    # with users who still haven't filled in their availability
-                    try:
-                        recent_events = db.execute(
-                            "SELECT id FROM events WHERE created_at <= datetime('now', '-1 day') "
-                            "AND week_end >= ?", (today_date,)
-                        ).fetchall()
-                        for ev in recent_events:
-                            auto_nudge_if_due(db, ev['id'])
-                    except Exception as e:
-                        print(f'Auto-nudge error: {e}')
+                    # with users who still haven't filled in their availability.
+                    # Signal-only — it targets people by phone number.
+                    if signal_on:
+                        try:
+                            recent_events = db.execute(
+                                "SELECT id FROM events WHERE created_at <= datetime('now', '-1 day') "
+                                "AND week_end >= ?", (today_date,)
+                            ).fetchall()
+                            for ev in recent_events:
+                                auto_nudge_if_due(db, ev['id'])
+                        except Exception as e:
+                            print(f'Auto-nudge error: {e}')
 
                     # Late-change reports are time-sensitive and unrelated to
                     # the daily time, so flush before the daily-summary guards
@@ -304,22 +312,33 @@ def start_signal_scheduler(app):
 
                     if not is_due(now, daily_time):
                         continue
-                    if not claim_daily_run(db, 'signal_daily_last_run', today_date):
+                    # Each channel claims its own day, so turning one on later
+                    # doesn't make the other skip its summary.
+                    do_signal = signal_on and claim_daily_run(db, 'signal_daily_last_run', today_date)
+                    do_push = push_on and claim_daily_run(db, 'push_daily_last_run', today_date)
+                    if not do_signal and not do_push:
                         continue
+
                     events = db.execute(
                         'SELECT * FROM events WHERE week_start <= ? AND week_end >= ?',
                         (today_date, today_date)
                     ).fetchall()
                     for event in events:
-                        # Dedup: skip if already sent in the last 10 minutes
-                        recent = db.execute(
-                            "SELECT id FROM signal_log WHERE event_id = ? AND date = ? "
-                            "AND message_type = 'daily_summary' AND success = 1 "
-                            "AND sent_at > datetime('now', '-10 minutes')",
-                            (event['id'], today_date)
-                        ).fetchone()
-                        if not recent:
-                            notify_daily_summary(db, event['id'], today_date)
+                        if do_signal:
+                            # Dedup: skip if already sent in the last 10 minutes
+                            recent = db.execute(
+                                "SELECT id FROM signal_log WHERE event_id = ? AND date = ? "
+                                "AND message_type = 'daily_summary' AND success = 1 "
+                                "AND sent_at > datetime('now', '-10 minutes')",
+                                (event['id'], today_date)
+                            ).fetchone()
+                            if not recent:
+                                notify_daily_summary(db, event['id'], today_date)
+                        if do_push:
+                            try:
+                                push_triggers.daily_summary(db, event['id'], today_date)
+                            except Exception as e:
+                                print(f'Push daily summary error: {e}')
             except Exception as e:
                 print(f'Signal scheduler error: {e}')
 

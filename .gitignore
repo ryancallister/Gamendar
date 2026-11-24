@@ -7,6 +7,10 @@ data/*.db-wal
 data/secret_key
 secret_key
 
+# Auto-generated VAPID key for push notifications — never commit this
+data/vapid_key.pem
+vapid_key.pem
+
 # Environment
 .env
 .env.*

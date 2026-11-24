@@ -4,6 +4,7 @@ from auth_utils import token_required, admin_required
 from discord_service import check_and_notify_all_available
 from signal_service import check_and_notify_all_available as signal_check_all_available
 from signal_service import record_change as signal_record_change
+import push_triggers
 from datetime import datetime
 
 availability_bp = Blueprint('availability', __name__)
@@ -113,6 +114,10 @@ def set_availability(current_user, event_id):
         signal_check_all_available(db, event_id, data['date'])
     except Exception as e:
         print(f'Signal all-available check error: {e}')
+    try:
+        push_triggers.all_available(db, event_id, data['date'])
+    except Exception as e:
+        print(f'Push all-available check error: {e}')
 
     return jsonify({'message': 'Availability saved'})
 
