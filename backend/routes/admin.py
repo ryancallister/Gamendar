@@ -138,6 +138,13 @@ def create_user(current_user):
         return jsonify({'error': 'Signal number must be digits, optionally starting with +'}), 400
 
     db = get_db()
+    # The UNIQUE index on email is case-sensitive, but single sign-on matches
+    # on lower(email) — so two accounts differing only in case would make that
+    # lookup ambiguous. Guard it here the same way update_user does.
+    taken = db.execute('SELECT 1 FROM users WHERE lower(email) = lower(?)', (email,)).fetchone()
+    if taken:
+        return jsonify({'error': 'Another user already has that email'}), 409
+
     try:
         db.execute(
             'INSERT INTO users (username, email, password_hash, role, signal_number) VALUES (?, ?, ?, ?, ?)',

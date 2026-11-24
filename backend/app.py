@@ -12,6 +12,8 @@ from routes.admin import admin_bp
 from routes.discord import discord_bp, start_scheduler
 from routes.signal import signal_bp, start_signal_scheduler
 from routes.recurring import recurring_bp, start_recurring_scheduler
+from routes.push import push_bp
+import push_service
 import mimetypes
 import os
 import sys
@@ -67,6 +69,8 @@ init_db(app)
 with app.app_context():
     if access_sso.enabled():
         print(f'Cloudflare Access single sign-on is on for {access_sso.settings()[0]}', flush=True)
+        # Fetch the signing keys now rather than inside the first sign-in.
+        access_sso.warm_keys()
 
 app.register_blueprint(auth_bp,          url_prefix='/api/auth')
 app.register_blueprint(events_bp,        url_prefix='/api/events')
@@ -75,10 +79,12 @@ app.register_blueprint(admin_bp,         url_prefix='/api/admin')
 app.register_blueprint(discord_bp,       url_prefix='/api/discord')
 app.register_blueprint(signal_bp,        url_prefix='/api/signal')
 app.register_blueprint(recurring_bp,     url_prefix='/api/recurring')
+app.register_blueprint(push_bp,          url_prefix='/api/push')
 
 start_scheduler(app)
 start_signal_scheduler(app)
 start_recurring_scheduler(app)
+push_service.start_push_worker(app)
 
 @app.route('/api/health')
 def health():

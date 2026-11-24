@@ -27,6 +27,12 @@ from jwt import PyJWKClient
 
 from database import get_db
 
+# Cloudflare's key endpoint is fetched inline while handling a request, and the
+# container runs a single worker, so a slow endpoint would stall every other
+# request too — including the password sign-in that is meant to be the fallback
+# when Cloudflare is having a bad day. Give up quickly instead of hanging.
+JWKS_TIMEOUT_SECONDS = 5
+
 _TEAM_RE = re.compile(r'^[a-z0-9][a-z0-9-]*\.cloudflareaccess\.com$')
 _AUD_RE = re.compile(r'^[0-9a-f]{32,128}$')
 _jwks_clients = {}
@@ -83,18 +89,36 @@ def settings():
 
 def check_team_keys(team):
     """Fetch the team's signing keys once, so a typo in the team domain is caught when saving."""
-    PyJWKClient(f'https://{team}/cdn-cgi/access/certs').get_signing_keys()
+    PyJWKClient(f'https://{team}/cdn-cgi/access/certs',
+                timeout=JWKS_TIMEOUT_SECONDS).get_signing_keys()
 
 
 def enabled():
     return settings() is not None
 
 
+def warm_keys():
+    """Populate the key cache at startup, so no sign-in pays for the first fetch.
+
+    Bounded by JWKS_TIMEOUT_SECONDS, and failure is not fatal: the keys are
+    fetched on demand instead.
+    """
+    cfg = settings()
+    if not cfg:
+        return
+    try:
+        _jwks(cfg[0]).get_signing_keys()
+    except Exception as e:
+        print(f'WARNING: could not pre-fetch Cloudflare Access keys ({e}); '
+              'the first sign-in will fetch them instead.')
+
+
 def _jwks(team):
     client = _jwks_clients.get(team)
     if client is None:
         # PyJWKClient caches the key set and refetches when it sees an unknown key id (key rotation).
-        client = PyJWKClient(f'https://{team}/cdn-cgi/access/certs', cache_keys=True, lifespan=12 * 3600)
+        client = PyJWKClient(f'https://{team}/cdn-cgi/access/certs', cache_keys=True,
+                             lifespan=12 * 3600, timeout=JWKS_TIMEOUT_SECONDS)
         _jwks_clients[team] = client
     return client
 

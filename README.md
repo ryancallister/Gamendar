@@ -20,6 +20,7 @@ This is 99% **AI Generated/Vibe Coded**. I made this for use with my friends as 
 - **Optional single sign-on** — behind Cloudflare Access, people are signed in with their Cloudflare login (matched by email); password sign-in still works
 - **Discord integration** — webhook-based notifications for new events, daily summaries, and all-available alerts
 - **Signal integration** — same notifications via signal-cli-rest-api; message templates fully editable from the admin panel
+- **OS notifications** — anyone can turn on push notifications for a device from their account panel; they use the same message templates as Signal and work with no Signal set up at all
 - **Late-change reports** — once the daily summary has gone out, anyone changing today's answer is reported to Signal with who they are and what they switched to, batched behind a configurable delay (default 5 minutes) so a flurry of edits is one message
 - **Security** — bcrypt passwords, rate-limited login (10 attempts / 15 min), input validation, security headers, startup check for default SECRET_KEY
 - **Add to home screen** — web app manifest and icons, so phones can install it and open it full screen like an app
@@ -191,6 +192,40 @@ anyone who can reach the container port directly could set it.
 - If the Cloudflare session expires while the page is open, the page reloads so Cloudflare can show its login.
 
 ---
+
+## Notifications on your phone or desktop
+
+Click your name in the top right → **Notify me on this device**. Allow the
+browser prompt and that's it. The same messages that go to Signal arrive as OS
+notifications, using the same editable templates, so a group only writes its
+wording once.
+
+Nothing needs configuring server-side: a signing key is generated on first use
+and kept next to the database as `vapid_key.pem`.
+
+**Opting in is per device, not per account.** A push subscription belongs to
+one browser, so turn it on wherever you want to be told — phone and desktop are
+separate switches. Installing Gamendar to your home screen first gives the best
+results, especially on iOS, which only delivers push to an installed app.
+
+**It needs an https address.** Browsers only allow push on a secure origin
+(`localhost` excepted), so on a plain LAN address like `http://192.168.1.x:3005`
+the toggle explains that instead of appearing. Put Gamendar behind a reverse
+proxy or Cloudflare Tunnel and it works.
+
+What arrives:
+
+| | When |
+|---|---|
+| 📅 New event | an admin creates a weekly event |
+| 📋 Daily summary | at the configured Signal summary time |
+| 🎉 Everyone available | once all active users mark a day available |
+| 🔄 Late changes | if late-change reports are on |
+
+The Signal-only nudge DM is not sent as a push — it targets people by phone
+number. To stop notifications, turn the switch off on that device, or revoke
+the permission in your browser; an expired subscription is dropped
+automatically the first time a send to it fails.
 
 ## Discord Integration
 

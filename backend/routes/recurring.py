@@ -122,6 +122,11 @@ def create_now(current_user):
         signal_notify(db, dict(event))
     except Exception as e:
         print(f'Signal notify error: {e}')
+    try:
+        import push_triggers
+        push_triggers.event_created(db, event)
+    except Exception as e:
+        print(f'Push notify error: {e}')
 
     return jsonify({'message': 'Recurring event created', 'event': dict(event)}), 201
 
@@ -185,6 +190,11 @@ def start_recurring_scheduler(app):
                             sn(db, dict(event))
                         except Exception as e:
                             print(f'Signal notify error: {e}')
+                        try:
+                            import push_triggers
+                            push_triggers.event_created(db, event)
+                        except Exception as e:
+                            print(f'Push notify error: {e}')
             except Exception as e:
                 print(f'Recurring scheduler error: {e}')
 

@@ -644,6 +644,14 @@
 
   hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 
+  #user-chip { cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+  #user-chip:hover { background: var(--surface2); border-color: var(--border2); }
+  #user-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notif-row { display: flex; align-items: flex-start; gap: 10px; }
+  .notif-note { font-size: 12px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
+  .notif-note strong { color: var(--text2); font-weight: 600; }
+
   .section-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1rem; }
 
   .template-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
@@ -760,7 +768,9 @@
       <button class="nav-btn" onclick="showPage('admin')" id="nav-admin" style="display:none">Admin</button>
     </nav>
     <div class="topbar-right">
-      <div class="user-chip">
+      <div class="user-chip" id="user-chip" role="button" tabindex="0"
+           title="Your account and notifications"
+           onclick="openAccount()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAccount();}">
         <div class="avatar" id="user-avatar"></div>
         <span id="user-label"></span>
         <span class="badge" id="user-role-badge"></span>
@@ -2699,6 +2709,170 @@ async function deleteUser(id) {
 }
 
 // ─── MODAL & TOAST HELPERS ───────────────────────────────────────
+// ─── OS NOTIFICATIONS ────────────────────────────────────────────
+// Opting in is per device, because a push subscription belongs to one
+// browser. The service worker in sw.js shows whatever arrives.
+
+let swReg = null;
+
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    swReg = await navigator.serviceWorker.register('/sw.js');
+    return swReg;
+  } catch (e) {
+    return null;
+  }
+}
+
+function pushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+// Browsers only allow push over HTTPS (localhost excepted), which is the usual
+// reason the toggle is missing on a LAN address.
+function secureEnough() {
+  return window.isSecureContext;
+}
+
+function urlBase64ToUint8Array(base64) {
+  const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4))
+    .replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(padded);
+  return Uint8Array.from([...raw].map(ch => ch.charCodeAt(0)));
+}
+
+async function currentSubscription() {
+  const reg = swReg || await registerServiceWorker();
+  if (!reg) return null;
+  return reg.pushManager.getSubscription();
+}
+
+async function enableNotifications() {
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    throw new Error(permission === 'denied'
+      ? 'Notifications are blocked for this site. Allow them in your browser settings, then try again.'
+      : 'Notification permission was dismissed.');
+  }
+  const cfg = await api('/push/config');
+  if (!cfg.available || !cfg.public_key) throw new Error('The server has no notification key set up.');
+
+  const reg = swReg || await registerServiceWorker();
+  if (!reg) throw new Error('This browser would not register the service worker.');
+  await navigator.serviceWorker.ready;
+
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(cfg.public_key),
+    });
+  }
+  await api('/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription: sub.toJSON() }) });
+}
+
+async function disableNotifications() {
+  const sub = await currentSubscription();
+  if (!sub) return;
+  try {
+    await api('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint: sub.endpoint }) });
+  } finally {
+    // Drop it locally even if the server call failed, so the toggle matches
+    // what the browser will actually deliver.
+    await sub.unsubscribe().catch(() => {});
+  }
+}
+
+async function openAccount() {
+  if (!currentUser) return;
+  showModal(`
+    <h3>${esc(currentUser.username)}</h3>
+    <div class="af-sub" style="margin:-6px 0 1rem">${esc(currentUser.email)} · ${esc(currentUser.role)}</div>
+    <div id="modal-error"></div>
+    <div id="account-notifications">
+      <div class="notif-note">Checking notification support…</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+    </div>
+  `);
+  renderNotificationSetting();
+}
+
+async function renderNotificationSetting() {
+  const el = document.getElementById('account-notifications');
+  if (!el) return;
+
+  if (!pushSupported() || !secureEnough()) {
+    el.innerHTML = `<p class="section-title" style="margin-bottom:0.5rem">Notifications</p>
+      <div class="notif-note">
+        ${!secureEnough()
+          ? 'Notifications need an <strong>https</strong> address. Open Gamendar on its secure address and they will appear here.'
+          : 'This browser does not support notifications.'}
+      </div>`;
+    return;
+  }
+
+  let cfg = { available: false };
+  try { cfg = await api('/push/config'); } catch(e) { /* shown below */ }
+  if (!cfg.available) {
+    el.innerHTML = `<p class="section-title" style="margin-bottom:0.5rem">Notifications</p>
+      <div class="notif-note">The server has not set up a notification key yet.</div>`;
+    return;
+  }
+
+  const sub = await currentSubscription();
+  const on = !!sub && Notification.permission === 'granted';
+  const blocked = Notification.permission === 'denied';
+
+  el.innerHTML = `
+    <p class="section-title" style="margin-bottom:0.5rem">Notifications</p>
+    <label class="notif-row" style="cursor:${blocked ? 'not-allowed' : 'pointer'}">
+      <input type="checkbox" id="notif-toggle" ${on ? 'checked' : ''} ${blocked ? 'disabled' : ''}
+        style="width:18px;height:18px;accent-color:var(--accent);margin-top:2px"
+        onchange="toggleNotifications(this)">
+      <span>Notify me on this device
+        <span style="color:var(--text3);font-size:12px">— the same updates that go to Signal</span>
+      </span>
+    </label>
+    <div class="notif-note">
+      ${blocked
+        ? 'Your browser is blocking notifications for this site. Allow them in site settings, then reopen this panel.'
+        : 'Each device is separate, so turn this on wherever you want to be told. Install Gamendar to your home screen for the best results.'}
+      ${cfg.devices ? `<br>On <strong>${cfg.devices}</strong> device${cfg.devices === 1 ? '' : 's'} for your account.` : ''}
+    </div>
+    ${on ? `<div style="margin-top:0.75rem"><button class="btn btn-ghost btn-sm" onclick="sendTestNotification(this)">Send a test</button></div>` : ''}
+  `;
+}
+
+async function toggleNotifications(input) {
+  const errEl = document.getElementById('modal-error');
+  if (errEl) errEl.innerHTML = '';
+  input.disabled = true;
+  try {
+    if (input.checked) await enableNotifications();
+    else await disableNotifications();
+  } catch(e) {
+    if (errEl) errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+  } finally {
+    input.disabled = false;
+    renderNotificationSetting();
+  }
+}
+
+async function sendTestNotification(btn) {
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await api('/push/test', { method: 'POST' });
+    toast('Test notification sent');
+  } catch(e) {
+    toast('Failed: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Send a test';
+  }
+}
+
 function showModal(html) {
   document.getElementById('modal-container').innerHTML = `
     <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
@@ -2753,6 +2927,7 @@ function fmtDateShort(iso) {
 }
 
 // ─── BOOT ────────────────────────────────────────────────────────
+registerServiceWorker();
 (async () => {
   if (token || await trySso()) enterApp();
   else showAuthScreen();
