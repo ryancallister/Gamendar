@@ -12,8 +12,11 @@ from routes.admin import admin_bp
 from routes.discord import discord_bp, start_scheduler
 from routes.signal import signal_bp, start_signal_scheduler
 from routes.recurring import recurring_bp, start_recurring_scheduler
+import mimetypes
 import os
 import sys
+
+mimetypes.add_type('application/manifest+json', '.webmanifest')
 
 # ── Signing key ───────────────────────────────────────────────────
 # SECRET_KEY from the environment wins; otherwise one is generated and kept

@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gamendar</title>
+<!-- Home screen / installable app. crossorigin=use-credentials so the manifest
+     still loads when the site sits behind a login proxy such as Cloudflare Access. -->
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
+<meta name="theme-color" content="#0f1117">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gamendar">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>

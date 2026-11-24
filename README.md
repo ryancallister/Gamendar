@@ -22,6 +22,7 @@ This is 99% **AI Generated/Vibe Coded**. I made this for use with my friends as 
 - **Signal integration** — same notifications via signal-cli-rest-api; message templates fully editable from the admin panel
 - **Late-change reports** — once the daily summary has gone out, anyone changing today's answer is reported to Signal with who they are and what they switched to, batched behind a configurable delay (default 5 minutes) so a flurry of edits is one message
 - **Security** — bcrypt passwords, rate-limited login (10 attempts / 15 min), input validation, security headers, startup check for default SECRET_KEY
+- **Add to home screen** — web app manifest and icons, so phones can install it and open it full screen like an app
 - Fully self-hosted, no external services required beyond optional Discord/Signal
 
 ---
@@ -261,7 +262,9 @@ gamendar/
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
-│   └── index.html            # The single-page frontend — the only copy
+│   ├── index.html            # The single-page frontend — the only copy
+│   ├── manifest.webmanifest  # Home screen / install metadata
+│   └── *.png                 # App icons (generated from templates/icon.png)
 ├── data/                     # SQLite DB — gitignored, created at runtime
 ├── .github/workflows/
 │   └── docker-build.yml      # Builds & pushes single image to ghcr.io on push to main
@@ -275,7 +278,7 @@ gamendar/
 ```
 
 The Docker build context is the **repository root** (not `backend/`), because the
-image assembles `backend/` plus `frontend/index.html` into `/app`, where Flask
+image assembles `backend/` plus `frontend/` into `/app`, where Flask
 serves the page from `/app/static/index.html`. Running `backend/app.py` straight
 from a checkout works too — it falls back to serving `frontend/index.html`
 directly, so there is only ever one copy of the UI to edit.

@@ -7,9 +7,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
 
-# frontend/index.html is the single source for the UI; Flask serves it
-# from /app/static. Build context is the repo root, not ./backend.
-COPY frontend/index.html static/index.html
+# frontend/ is the single source for the UI (index.html, manifest, icons);
+# Flask serves it from /app/static. Build context is the repo root, not ./backend.
+COPY frontend/ static/
 
 RUN mkdir -p /data
 
