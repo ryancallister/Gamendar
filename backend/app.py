@@ -67,6 +67,8 @@ init_db(app)
 with app.app_context():
     if access_sso.enabled():
         print(f'Cloudflare Access single sign-on is on for {access_sso.settings()[0]}', flush=True)
+        # Fetch the signing keys now rather than inside the first sign-in.
+        access_sso.warm_keys()
 
 app.register_blueprint(auth_bp,          url_prefix='/api/auth')
 app.register_blueprint(events_bp,        url_prefix='/api/events')
