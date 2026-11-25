@@ -162,7 +162,13 @@ def busy(current_user, event_id):
     day = date.fromisoformat(event['week_start'])
     last = date.fromisoformat(event['week_end'])
     while day <= last:
-        out[day.isoformat()] = sb.labelled_spans_on(blocks, day.weekday())
+        weekday = day.weekday()
+        window = sb.preferred_free_window(blocks, weekday)
+        out[day.isoformat()] = {
+            'spans': sb.labelled_spans_on(blocks, weekday),
+            # The gap the chart centres on when nobody has given a time yet.
+            'free': None if window is None else {'start': window[0], 'end': window[1]},
+        }
         day += timedelta(days=1)
     return jsonify(out)
 

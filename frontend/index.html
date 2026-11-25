@@ -2139,7 +2139,8 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
 
   // My own blocked-out time for this day, drawn on my row only — other
   // people's labels are private.
-  const mySpans = (myBusy[timesDay] || []);
+  const myDay = myBusy[timesDay] || {};
+  const mySpans = myDay.spans || [];
   const iAmListed = blocks.some(b => b.userId === currentUser.id);
   if (mySpans.length && !iAmListed) {
     // Worth a row even with no time of my own: it still shows my day.
@@ -2154,17 +2155,35 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
     return `<div class="times-panel" id="times-panel">${head}${freeNote}</div>`;
   }
 
-  // A fixed 06:00–24:00 axis rather than one that fits the data. The small
-  // hours are dead time for arranging an evening, and letting a 1am finish
-  // stretch the scale squeezes the part of the day anyone cares about.
-  // Anything outside is clipped; the labels still name the real times.
-  const lo = DAY_AXIS_START, hi = DAY_AXIS_END;
+  const timedBlocks = blocks.filter(b => b.start !== null);
+
+  // The axis crops to the part of the day in play instead of running the whole
+  // evening: the times on show, or — when nobody has given one — the free
+  // window my own schedule leaves, padded by an hour either side and rounded
+  // out to whole hours. That hour is the point of it: you see the tail of the
+  // busy block before the gap and the head of the one after, so a block reads
+  // as "free from the end of work until bedtime" rather than floating in an
+  // empty scale. Only when there is nothing at all to centre on does it fall
+  // back to the whole evening.
+  const focus = timedBlocks.length
+    ? { start: Math.min(...timedBlocks.map(b => b.start)),
+        end:   Math.max(...timedBlocks.map(b => b.end)) }
+    : (myDay.free || null);
+  let lo = DAY_AXIS_START, hi = DAY_AXIS_END;
+  if (focus) {
+    lo = Math.max(0, Math.floor((focus.start - 60) / 60) * 60);
+    hi = Math.min(MINUTES_IN_DAY, Math.ceil((focus.end + 60) / 60) * 60);
+    // A lone half-hour entry shouldn't blow up into a half-hour-wide scale.
+    while (hi - lo < MIN_AXIS_SPAN && (lo > 0 || hi < MINUTES_IN_DAY)) {
+      if (lo > 0) lo -= 60;
+      if (hi - lo < MIN_AXIS_SPAN && hi < MINUTES_IN_DAY) hi += 60;
+    }
+  }
   const span = hi - lo;
   const clampToAxis = m => Math.min(Math.max(m, lo), hi);
   const pct = m => ((clampToAxis(m) - lo) / span) * 100;
 
   // The overlay proper: the window that works for everyone who gave a time
-  const timedBlocks = blocks.filter(b => b.start !== null);
   const olStart = Math.max(...timedBlocks.map(b => b.start));
   const olEnd   = Math.min(...timedBlocks.map(b => b.end));
   const hasOverlap = timedBlocks.length > 1 && olEnd > olStart;
@@ -2176,9 +2195,9 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
   const busyBars = mySpans.map(sp => {
     const left = pct(sp.start), width = pct(sp.end) - pct(sp.start);
     if (width <= 0) return '';
-    // Below about half an hour there is no room for a word; the tooltip
-    // still carries it. (The axis is 18h wide, so 4% is ~45 minutes.)
-    const label = width >= 4 ? `<span>${esc(sp.label)}</span>` : '';
+    // Below a tenth of the axis there is no room for a word; the tooltip
+    // still carries it.
+    const label = width >= 10 ? `<span>${esc(sp.label)}</span>` : '';
     return `<div class="tl-busy" style="left:${left}%;width:${width}%"
       title="${esc(sp.label)} · ${fmtTime(sp.start)} – ${fmtTime(sp.end)}">${label}</div>`;
   }).join('');
@@ -2187,8 +2206,8 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
     if (b.start === null) return '';
     const left = pct(b.start);
     const width = pct(b.end) - pct(b.start);
-    const outside = width <= 0;   // entirely before 06:00 or after midnight
-    const wrapped = b.end > DAY_AXIS_END;
+    const outside = width <= 0;   // entirely off the cropped axis
+    const wrapped = b.end > MINUTES_IN_DAY;
     return `<div class="tl-block ${b.status}${outside ? ' clipped-out' : ''}"
          style="left:${outside && b.start >= hi ? 98 : left}%;width:${outside ? 2 : width}%"
          title="${esc(b.username)}: ${fmtTime(b.start)} – ${fmtTime(b.end)}${
@@ -2206,7 +2225,7 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
       <div class="tl-track">${b.userId === currentUser.id ? busyBars : ''}${band}${availBlock(b)}</div>
     </div>`).join('');
 
-  const step = 180;        // every three hours across the fixed window
+  const step = span <= 300 ? 60 : span <= 600 ? 120 : 180;
   const tickAt = [];
   for (let m = lo; m <= hi; m += step) tickAt.push(m);
   // The step rarely lands exactly on the end, so label it explicitly —
@@ -2931,10 +2950,13 @@ function hydrateIcons(root = document) {
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-// The times chart runs 06:00 to midnight. Midnight to 6am is dead time for
-// arranging an evening, and including it squeezes the hours that matter.
+// The times chart crops itself to the hours in play (see buildTimesPanel).
+// These are only the fallback for a day with nothing to centre on, and the
+// narrowest window worth drawing.
 const DAY_AXIS_START = 6 * 60;
 const DAY_AXIS_END = 24 * 60;
+const MINUTES_IN_DAY = 24 * 60;
+const MIN_AXIS_SPAN = 4 * 60;
 let scheduleBlocks = [];
 let blockDays = [];          // which chips are lit in the open modal
 let editingBlockId = null;
