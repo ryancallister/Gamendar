@@ -212,6 +212,17 @@ would answer "00:00–07:00" for a weeknight whose small hours aren't explicitly
 blocked. A day with nothing blocked is marked available with no times; a day
 blocked end to end is marked unavailable.
 
+Your blocked-out time also shows on the **Times** chart in the Everyone view,
+hatched and labelled behind your availability bar, so you can see the gap your
+free window sits in. Only your own blocks are drawn — nobody else's row shows
+theirs.
+
+That chart runs **06:00 to midnight**. Midnight to 6am is dead time for
+arranging an evening, and letting a 1am finish stretch the scale squeezes the
+hours anyone actually cares about, so it is cut. Anything outside is clipped to
+the edge while its label keeps the real time, e.g. a block ending at 1am still
+reads `8p–1a`.
+
 It's a starting point rather than a lock: every day is still editable by hand
 afterwards, and notes you've written are left alone.
 
