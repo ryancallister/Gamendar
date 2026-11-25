@@ -91,6 +91,20 @@ def init_db(app):
                 attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS schedule_blocks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                label TEXT NOT NULL,
+                days TEXT NOT NULL,
+                start_time TEXT NOT NULL,
+                end_time TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+
+            CREATE INDEX IF NOT EXISTS schedule_blocks_by_user
+                ON schedule_blocks (user_id);
+
             CREATE TABLE IF NOT EXISTS push_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 event_id INTEGER,

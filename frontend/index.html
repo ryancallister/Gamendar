@@ -652,6 +652,56 @@
   .notif-note { font-size: 12px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
   .notif-note strong { color: var(--text2); font-weight: 600; }
 
+  /* ── My Schedule ──────────────────────────────────────────── */
+  .sched-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.25rem; }
+  .sched-card {
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 1.1rem 1.25rem;
+  }
+  .sched-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px; color: var(--text2);
+  }
+  .sched-body { flex: 1; min-width: 0; }
+  .sched-label { font-size: 16px; font-weight: 700; }
+  .sched-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+  .sched-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .sched-empty {
+    background: var(--surface); border: 1px dashed var(--border2);
+    border-radius: var(--radius-lg); padding: 2rem; text-align: center; color: var(--text2);
+  }
+  .sched-empty strong { color: var(--text); display: block; margin-bottom: 4px; }
+
+  .day-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .day-chip {
+    flex: 1 1 auto; min-width: 0; text-align: center;
+    padding: 8px 10px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--bg); color: var(--text2);
+    font-size: 13px; font-weight: 600; font-family: var(--font); transition: all 0.12s;
+  }
+  .day-chip:hover { color: var(--text); border-color: var(--text3); }
+  .day-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .day-quick { display: flex; gap: 1.1rem; margin-top: 0.8rem; }
+  .day-quick button {
+    background: none; border: none; padding: 0; cursor: pointer;
+    color: var(--accent); font-size: 13px; font-family: var(--font); text-decoration: underline;
+  }
+  .form-hint { margin-top: 6px; font-size: 12px; color: var(--text3); line-height: 1.5; }
+  .time-pair { display: flex; gap: 1rem; }
+  .time-pair .form-group { flex: 1; min-width: 0; }
+  .time-pair input[type="time"] { width: 100%; color-scheme: dark; }
+
+  @media (max-width: 640px) {
+    .sched-card { flex-wrap: wrap; }
+    .sched-actions { width: 100%; }
+    .sched-actions .btn { flex: 1; }
+    .time-pair { flex-direction: column; gap: 0; }
+    .day-chip { padding: 8px 8px; font-size: 12px; }
+  }
+
   .section-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1rem; }
 
   .template-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
@@ -765,6 +815,7 @@
     <div class="topbar-logo"><div class="dot"></div>Gamendar</div>
     <nav class="topbar-nav">
       <button class="nav-btn active" onclick="showPage('events')" id="nav-events">Events</button>
+      <button class="nav-btn" onclick="showPage('schedule')" id="nav-schedule">My Schedule</button>
       <button class="nav-btn" onclick="showPage('admin')" id="nav-admin" style="display:none">Admin</button>
     </nav>
     <div class="topbar-right">
@@ -790,6 +841,18 @@
         <button class="btn btn-primary" onclick="openCreateEvent()" id="create-event-btn" style="display:none">+ New Event</button>
       </div>
       <div class="events-grid" id="events-list"><div class="spinner"></div></div>
+    </div>
+
+    <!-- MY SCHEDULE PAGE -->
+    <div class="page" id="page-schedule">
+      <div class="page-header">
+        <div>
+          <h2>My Schedule</h2>
+          <p>Block out the time you're regularly busy, then apply it to any week</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:auto" onclick="openScheduleBlock()"><span style="font-size:17px;line-height:1">+</span> Add blocked-out time</button>
+      <div id="schedule-list" class="sched-list"><div class="spinner"></div></div>
     </div>
 
     <!-- EVENT DETAIL PAGE -->
@@ -1170,6 +1233,7 @@ function showPage(name) {
   const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
   if (navEl) navEl.classList.add('active');
   if (name === 'events') loadEvents();
+  if (name === 'schedule') loadSchedule();
   if (name === 'admin') { loadUsers(); loadSsoSettings(); loadRecurringSettings(); loadDiscordSettings(); loadSignalSettings(); loadSignalTemplates(); }
 }
 
@@ -1513,6 +1577,7 @@ function renderAvailForm(data, isPast = false) {
       <div class="af-quick">
         <button class="btn btn-ghost btn-sm" onclick="formCopyLastWeek(${ev.id})">Copy last week</button>
         <button class="btn btn-ghost btn-sm" onclick="formAllFree()">All free</button>
+        <button class="btn btn-ghost btn-sm" onclick="formApplySchedule(${ev.id})">Apply my schedule</button>
       </div>
       ${rows}
       <div class="af-footer">Saves as you tap</div>
@@ -2709,6 +2774,162 @@ async function deleteUser(id) {
 }
 
 // ─── MODAL & TOAST HELPERS ───────────────────────────────────────
+// ─── MY SCHEDULE ─────────────────────────────────────────────────
+// Recurring blocked-out time. Private to each person: the group only ever
+// sees the availability it produces, never the labels.
+
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+let scheduleBlocks = [];
+let blockDays = [];          // which chips are lit in the open modal
+let editingBlockId = null;
+
+async function loadSchedule() {
+  const el = document.getElementById('schedule-list');
+  if (!el) return;
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    scheduleBlocks = await api('/schedule/');
+  } catch(e) {
+    el.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+    return;
+  }
+  if (!scheduleBlocks.length) {
+    el.innerHTML = `<div class="sched-empty">
+      <strong>Nothing blocked out yet</strong>
+      Add the times you're regularly busy — work, classes, the gym, sleep —
+      and you can drop them onto any week in one tap.
+    </div>`;
+    return;
+  }
+  el.innerHTML = scheduleBlocks.map(b => `
+    <div class="sched-card">
+      <div class="sched-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="width:21px;height:21px"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></div>
+      <div class="sched-body">
+        <div class="sched-label">${esc(b.label)}</div>
+        <div class="sched-sub">${esc(b.summary)}</div>
+      </div>
+      <div class="sched-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openScheduleBlock(${b.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="width:14px;height:14px"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/><line x1="14.5" y1="6.5" x2="17.5" y2="9.5"/></svg> Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteScheduleBlock(${b.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="width:14px;height:14px"><path d="M4 7h16"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.8 12a1.6 1.6 0 0 0 1.6 1.5h6.2A1.6 1.6 0 0 0 16.7 19l.8-12"/></svg> Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function openScheduleBlock(id = null) {
+  const existing = id === null ? null : scheduleBlocks.find(b => b.id === id);
+  editingBlockId = existing ? existing.id : null;
+  blockDays = existing ? [...existing.days] : [0, 1, 2, 3, 4];
+
+  showModal(`
+    <h3>${existing ? 'Edit' : 'Add'} blocked-out time</h3>
+    <div id="modal-error"></div>
+    <div class="form-group">
+      <label>Label</label>
+      <input type="text" id="sb-label" maxlength="60" placeholder="Work"
+             value="${existing ? esc(existing.label) : ''}">
+      <div class="form-hint">Only you see this. Other members just see "Busy".</div>
+    </div>
+    <div class="form-group">
+      <label>Days</label>
+      <div class="day-chips" id="sb-days">
+        ${DAY_LABELS.map((d, i) => `<button type="button" class="day-chip" data-day="${i}"
+            onclick="toggleBlockDay(${i})">${d}</button>`).join('')}
+      </div>
+      <div class="day-quick">
+        <button type="button" onclick="setBlockDays([0,1,2,3,4])">Weekdays</button>
+        <button type="button" onclick="setBlockDays([5,6])">Weekends</button>
+        <button type="button" onclick="setBlockDays([0,1,2,3,4,5,6])">Every day</button>
+      </div>
+    </div>
+    <div class="time-pair">
+      <div class="form-group">
+        <label>Busy from</label>
+        <input type="time" id="sb-start" value="${existing ? esc(existing.start_time) : '09:00'}">
+      </div>
+      <div class="form-group">
+        <label>Until</label>
+        <input type="time" id="sb-end" value="${existing ? esc(existing.end_time) : '17:00'}">
+        <div class="form-hint">An end before the start means past midnight, e.g. a 22:00–06:00 shift.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="saveScheduleBlock()">Save</button>
+    </div>
+  `);
+  paintBlockDays();
+  document.getElementById('sb-label').focus();
+}
+
+function paintBlockDays() {
+  document.querySelectorAll('#sb-days .day-chip').forEach(chip => {
+    chip.classList.toggle('on', blockDays.includes(Number(chip.dataset.day)));
+  });
+}
+
+function toggleBlockDay(day) {
+  blockDays = blockDays.includes(day) ? blockDays.filter(d => d !== day) : [...blockDays, day];
+  paintBlockDays();
+}
+
+function setBlockDays(days) {
+  blockDays = [...days];
+  paintBlockDays();
+}
+
+async function saveScheduleBlock() {
+  const errEl = document.getElementById('modal-error');
+  errEl.innerHTML = '';
+  const body = {
+    label: document.getElementById('sb-label').value,
+    days: [...blockDays].sort((a, b) => a - b),
+    start_time: document.getElementById('sb-start').value,
+    end_time: document.getElementById('sb-end').value,
+  };
+  if (!body.days.length) {
+    errEl.innerHTML = '<div class="error-msg">Pick at least one day</div>';
+    return;
+  }
+  try {
+    if (editingBlockId === null) await api('/schedule/', { method: 'POST', body: JSON.stringify(body) });
+    else await api(`/schedule/${editingBlockId}`, { method: 'PUT', body: JSON.stringify(body) });
+    closeModal();
+    toast(editingBlockId === null ? 'Blocked-out time added' : 'Saved');
+    loadSchedule();
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+  }
+}
+
+async function deleteScheduleBlock(id) {
+  const block = scheduleBlocks.find(b => b.id === id);
+  if (!confirm(`Remove "${block ? block.label : 'this block'}"?`)) return;
+  try {
+    await api(`/schedule/${id}`, { method: 'DELETE' });
+    toast('Removed');
+    loadSchedule();
+  } catch(e) {
+    toast('Failed: ' + e.message);
+  }
+}
+
+// Fill the week from the person's schedule. It is a starting point, not a
+// lock: every day stays editable afterwards.
+async function formApplySchedule(eventId) {
+  try {
+    const data = await api(`/schedule/apply/${eventId}`, { method: 'POST' });
+    toast(data.message);
+    loadEventDetail(eventId);
+  } catch(e) {
+    if (/no blocked-out time/i.test(e.message)) {
+      toast('Nothing in your schedule yet — add some in My Schedule');
+      showPage('schedule');
+      return;
+    }
+    toast('Failed: ' + e.message);
+  }
+}
+
 // ─── OS NOTIFICATIONS ────────────────────────────────────────────
 // Opting in is per device, because a push subscription belongs to one
 // browser. The service worker in sw.js shows whatever arrives.
