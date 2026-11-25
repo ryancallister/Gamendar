@@ -388,6 +388,93 @@
   .af-time-row .af-time-clear:hover { color: var(--red); }
   .af-time-hint { flex-basis: 100%; font-size: 11px; color: var(--text3); }
 
+  /* ── Availability entry: the phone card deck ──────────────── */
+  /* Three buttons rarely fit one phone row, so they wrap and keep their
+     own width instead of one stretching across the second row. */
+  .af-deck .af-quick { flex-wrap: wrap; }
+  .af-deck .af-quick .btn { flex: 0 1 auto; }
+
+  .af-pager { display: flex; align-items: center; gap: 8px; margin: 1.1rem 0 0.9rem; }
+  .af-arrow {
+    width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--bg); color: var(--text2);
+    display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+  }
+  .af-arrow.prev .ic { transform: rotate(180deg); }
+  .af-arrow:not(:disabled):hover { color: var(--text); border-color: var(--text3); }
+  .af-arrow:disabled { opacity: 0.28; cursor: default; }
+
+  .af-chips { flex: 1; display: flex; justify-content: center; gap: 5px; }
+  .af-chip {
+    width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; position: relative;
+    border: 1px solid var(--border2); background: var(--bg); color: var(--text3);
+    font-family: var(--font); font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .af-chip.st-available   { background: var(--green); border-color: var(--green); color: #0a1a12; }
+  .af-chip.st-maybe       { background: var(--amber); border-color: var(--amber); color: #201502; }
+  .af-chip.st-unavailable { background: var(--red);   border-color: var(--red);   color: #220a0a; }
+  /* Ring rather than a fill, so "which day am I on" and "what did I answer"
+     stay two separate readings of the same chip. */
+  .af-chip.active { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--accent); }
+  .af-chip.is-today::after {
+    content: ''; position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%; background: var(--text3);
+  }
+
+  .af-stage { overflow: hidden; }
+  .afc {
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 1.15rem;
+  }
+  .afc-title { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 1rem; }
+  .afc-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .afc-choice {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
+    padding: 15px 2px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--surface); color: var(--text2);
+    font-family: var(--font); font-size: 12px; font-weight: 500; transition: all 0.12s;
+  }
+  .afc-choice span { white-space: nowrap; }
+  .afc-choice:hover { background: var(--surface2); color: var(--text); }
+  .afc-choice.sel-available   { background: var(--green-bg); color: var(--green); border-color: rgba(62,207,142,0.5); }
+  .afc-choice.sel-maybe       { background: var(--amber-bg); color: var(--amber); border-color: rgba(245,166,35,0.5); }
+  .afc-choice.sel-unavailable { background: var(--red-bg);   color: var(--red);   border-color: rgba(240,107,107,0.5); }
+
+  .afc-extra {
+    width: 100%; margin-top: 10px; padding: 11px 12px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--surface); color: var(--text3);
+    font-family: var(--font); font-size: 13px; transition: all 0.12s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .afc-extra:hover { color: var(--text2); background: var(--surface2); }
+  .afc-extra.has-extra { color: var(--accent); border-color: rgba(108,142,245,0.4); background: var(--accent-glow); }
+  .afc-extra .afc-dot { color: var(--text3); margin: 0 2px; }
+  .afc-panel { margin-top: 10px; }
+  .afc-panel .af-time-row, .afc-panel .af-note-row { padding-bottom: 0; }
+  .afc-panel .af-note-row { margin-top: 8px; }
+  /* Both times across the first line, hint and Clear sharing the second */
+  .afc-panel .af-time-row {
+    display: grid; align-items: center; gap: 8px;
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-areas: "start sep end" "hint hint clear";
+  }
+  .afc-panel .af-time-row input[type="time"]:first-of-type { grid-area: start; }
+  .afc-panel .af-time-sep { grid-area: sep; text-align: center; }
+  .afc-panel .af-time-row input[type="time"]:last-of-type { grid-area: end; }
+  .afc-panel .af-time-row input[type="time"] { width: 100%; box-sizing: border-box; }
+  .afc-panel .af-time-hint { grid-area: hint; }
+  .afc-panel .af-time-clear { grid-area: clear; margin-left: 0; justify-self: end; }
+
+  @keyframes af-slide-next { from { opacity: 0; transform: translateX(26%); } to { opacity: 1; transform: none; } }
+  @keyframes af-slide-prev { from { opacity: 0; transform: translateX(-26%); } to { opacity: 1; transform: none; } }
+  .afc.slide-next { animation: af-slide-next 0.22s cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .afc.slide-prev { animation: af-slide-prev 0.22s cubic-bezier(0.22, 0.61, 0.36, 1); }
+  @media (prefers-reduced-motion: reduce) {
+    .afc.slide-next, .afc.slide-prev { animation: none; }
+  }
+
   /* ── Everyone: time-block overlay ────────────────────────── */
   .detail-bottom {
     display: flex; gap: 1.25rem; align-items: flex-start;
@@ -1420,9 +1507,11 @@ async function loadEventDetail(eventId, isPast = false) {
 const COMPACT_MQ = window.matchMedia('(max-width: 640px)');
 function isCompactView() { return COMPACT_MQ.matches; }
 
-// Re-render the grid when crossing the breakpoint so labels switch form
+// Crossing the breakpoint switches the grid's labels and swaps the
+// availability form between the seven-day list and the card deck.
 COMPACT_MQ.addEventListener('change', () => {
   if (lastGridData) renderWeekGrid(lastGridData, lastGridIsPast);
+  if (currentEventData) renderAvailForm(currentEventData, lastGridIsPast);
 });
 
 // ─── DETAIL VIEW TOGGLE ──────────────────────────────────────────
@@ -1464,9 +1553,12 @@ function setDetailView(view) {
   document.getElementById('vt-form')?.classList.toggle('active', isForm);
   document.getElementById('vt-grid')?.classList.toggle('active', !isForm);
 
-  // Legend only matters for the grid view
+  // The legend is for the grid — and for the phone deck, whose day chips
+  // are coloured by the same three answers. The seven-day list spells them
+  // out on the buttons, so it doesn't need one.
+  const wantLegend = !isForm || isCompactView();
   document.querySelectorAll('#detail-legend .legend-item').forEach(el => {
-    el.style.display = isForm ? 'none' : '';
+    el.style.display = wantLegend ? '' : 'none';
   });
 }
 
@@ -1552,7 +1644,21 @@ function updateLocalAvailability(date, status, note, start = '', end = '') {
 }
 
 // ─── AVAILABILITY ENTRY FORM ─────────────────────────────────────
+// Two shapes, one state. A wide screen gets all seven days as a list. On a
+// phone that list is a scroll-and-squint affair, so the same seven days
+// become a deck you answer one card at a time and swipe through.
 let formDays = [];
+let formState = {};          // iso -> { status, note, start, end }
+let formIndex = 0;           // phone: which card is on screen
+let formIndexEvent = null;   // ...and whose event it is, so a background
+                             // refresh keeps your place but a different
+                             // event opens on today again.
+
+const STATUS_CHOICES = [
+  ['available',   'check', 'Available'],
+  ['maybe',       'help',  'Maybe'],
+  ['unavailable', 'x',     'Unavailable'],
+];
 
 function renderAvailForm(data, isPast = false) {
   const ev = data.event;
@@ -1562,12 +1668,12 @@ function renderAvailForm(data, isPast = false) {
   document.getElementById('view-toggle').style.display = isPast ? 'none' : '';
   if (isPast) { wrap.innerHTML = ''; return; }
 
-  // My current statuses and notes
-  const mine = {};
+  // My current statuses, notes and times
+  formState = {};
   for (const a of data.availability) {
     if (a.user_id === currentUser.id) {
-      mine[a.date] = { status: a.status, note: a.note || '',
-                       start: a.start_time || '', end: a.end_time || '' };
+      formState[a.date] = { status: a.status, note: a.note || '',
+                            start: a.start_time || '', end: a.end_time || '' };
     }
   }
 
@@ -1579,20 +1685,59 @@ function renderAvailForm(data, isPast = false) {
     formDays.push(d.toISOString().slice(0,10));
   }
 
+  if (formIndexEvent !== ev.id) { formIndex = formFirstUnanswered(); formIndexEvent = ev.id; }
+  formIndex = Math.min(Math.max(formIndex, 0), formDays.length - 1);
+
+  wrap.innerHTML = isCompactView() ? formCardsHtml(ev) : formListHtml(ev);
+  if (isCompactView()) bindFormSwipe();
+}
+
+function formAnswered(iso) {
+  return ['available','unavailable','maybe'].includes(formState[iso]?.status);
+}
+
+// Open on today when it's still ahead of you, otherwise the first day you
+// haven't answered — the card you most likely came to fill in.
+function formFirstUnanswered() {
+  const today = new Date().toISOString().slice(0,10);
+  const t = formDays.indexOf(today);
+  if (t >= 0 && !formAnswered(today)) return t;
+  const unset = formDays.findIndex(iso => !formAnswered(iso));
+  if (unset >= 0) return unset;
+  return t >= 0 ? t : 0;
+}
+
+function formSetCount() { return formDays.filter(formAnswered).length; }
+
+function formHeadHtml(ev, title, sub) {
+  return `<div class="af-header">
+      <div>
+        <h3>${title}</h3>
+        <div class="af-sub">${sub}</div>
+      </div>
+      <div class="af-progress" id="af-progress"><strong>${formSetCount()}</strong> of 7 set</div>
+    </div>
+    <div class="af-quick">
+      <button class="btn btn-ghost btn-sm" onclick="formCopyLastWeek(${ev.id})">Copy last week</button>
+      <button class="btn btn-ghost btn-sm" onclick="formAllFree()">All free</button>
+      <button class="btn btn-ghost btn-sm" onclick="formApplySchedule(${ev.id}, this)">${icon('calendar')} Apply my schedule</button>
+    </div>`;
+}
+
+// ── Wide screens: every day at once ──────────────────────────────
+function formListHtml(ev) {
   const today = new Date().toISOString().slice(0,10);
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const setCount = formDays.filter(iso => mine[iso] && ['available','unavailable','maybe'].includes(mine[iso].status)).length;
 
   const rows = formDays.map(iso => {
     const d = new Date(iso + 'T00:00:00');
-    const cur   = mine[iso]?.status || '';
-    const note  = mine[iso]?.note || '';
-    const start = mine[iso]?.start || '';
-    const end   = mine[iso]?.end || '';
+    const st = formState[iso] || {};
+    const cur = st.status || '', note = st.note || '';
+    const start = st.start || '', end = st.end || '';
     const hasTime = !!(start && end);
-    const mk = (val, sym, label) =>
+    const mk = ([val, ic, label]) =>
       `<button class="af-choice ${cur===val ? 'sel-'+val : ''}" title="${label}"
-         onclick="formSetStatus('${iso}', '${val}')">${sym}</button>`;
+         onclick="formSetStatus('${iso}', '${val}')">${icon(ic)}</button>`;
     return `
       <div class="af-day${iso===today?' today':''}" id="af-day-${iso}">
         <div class="af-day-label">${dayNames[d.getDay()]}<span class="af-daynum">${d.getDate()}</span></div>
@@ -1601,84 +1746,199 @@ function renderAvailForm(data, isPast = false) {
           onclick="formToggleTime('${iso}')">${hasTime
             ? fmtRangeShort(start, end)
             : '<span class="af-time-plus">+</span> Time'}</button>
-        <div class="af-choices">
-          ${mk('available', icon('check'), 'Available')}
-          ${mk('maybe', icon('help'), 'Maybe')}
-          ${mk('unavailable', icon('x'), 'Unavailable')}
-        </div>
+        <div class="af-choices">${STATUS_CHOICES.map(mk).join('')}</div>
         <button class="af-note-btn ${note ? 'has-note' : ''}" title="${note ? esc(note) : 'Add a note'}"
           onclick="formToggleNote('${iso}')">${icon('message')}</button>
       </div>
-      <div class="af-time-row" id="af-time-${iso}" style="display:${hasTime ? 'flex' : 'none'}">
-        <input type="time" id="af-start-${iso}" value="${esc(start)}" aria-label="Free from"
-          onchange="formSaveTime('${iso}')">
-        <span class="af-time-sep">to</span>
-        <input type="time" id="af-end-${iso}" value="${esc(end)}" aria-label="Free until"
-          onchange="formSaveTime('${iso}')">
-        <button class="af-time-clear" onclick="formClearTime('${iso}')">Clear</button>
-        <div class="af-time-hint">Optional — leave blank if you're free any time that day.</div>
-      </div>
-      <div class="af-note-row" id="af-note-${iso}" style="display:${note ? 'block' : 'none'}">
-        <input type="text" maxlength="60" placeholder="e.g. Free after 7pm" value="${esc(note)}"
-          onchange="formSaveNote('${iso}', this.value)"
-          onkeydown="if(event.key==='Enter'){this.blur();}">
-      </div>`;
+      ${formTimeRowHtml(iso, start, end, hasTime)}
+      ${formNoteRowHtml(iso, note, !!note)}`;
   }).join('');
 
-  wrap.innerHTML = `
-    <div class="af-card">
-      <div class="af-header">
-        <div>
-          <h3>${esc(ev.title)}</h3>
-          <div class="af-sub">Your availability</div>
-        </div>
-        <div class="af-progress" id="af-progress"><strong>${setCount}</strong> of 7 set</div>
-      </div>
-      <div class="af-quick">
-        <button class="btn btn-ghost btn-sm" onclick="formCopyLastWeek(${ev.id})">Copy last week</button>
-        <button class="btn btn-ghost btn-sm" onclick="formAllFree()">All free</button>
-        <button class="btn btn-ghost btn-sm" onclick="formApplySchedule(${ev.id}, this)">Apply my schedule</button>
-      </div>
+  return `<div class="af-card">
+      ${formHeadHtml(ev, esc(ev.title), 'Your availability')}
       ${rows}
       <div class="af-footer">Saves as you tap</div>
     </div>`;
 }
 
+function formTimeRowHtml(iso, start, end, open) {
+  const inline = open === null ? '' : ` style="display:${open ? 'flex' : 'none'}"`;
+  return `<div class="af-time-row" id="af-time-${iso}"${inline}>
+      <input type="time" id="af-start-${iso}" value="${esc(start)}" aria-label="Free from"
+        onchange="formSaveTime('${iso}')">
+      <span class="af-time-sep">to</span>
+      <input type="time" id="af-end-${iso}" value="${esc(end)}" aria-label="Free until"
+        onchange="formSaveTime('${iso}')">
+      <button class="af-time-clear" onclick="formClearTime('${iso}')">Clear</button>
+      <div class="af-time-hint">Optional — leave blank if you're free any time that day.</div>
+    </div>`;
+}
+
+function formNoteRowHtml(iso, note, open) {
+  const inline = open === null ? '' : ` style="display:${open ? 'block' : 'none'}"`;
+  return `<div class="af-note-row" id="af-note-${iso}"${inline}>
+      <input type="text" maxlength="60" placeholder="e.g. Free after 7pm" value="${esc(note)}"
+        onchange="formSaveNote('${iso}', this.value)"
+        onkeydown="if(event.key==='Enter'){this.blur();}">
+    </div>`;
+}
+
+// ── Phones: one day at a time ────────────────────────────────────
+function formCardsHtml(ev) {
+  return `<div class="af-card af-deck">
+      ${formHeadHtml(ev, 'Your availability', 'Mark each day free, maybe, or busy.')}
+      <div class="af-pager">
+        <button class="af-arrow prev" id="af-prev" aria-label="Previous day"
+          onclick="formGoDay(-1)">${icon('chevron')}</button>
+        <div class="af-chips" id="af-chips">${formChipsHtml()}</div>
+        <button class="af-arrow" id="af-next" aria-label="Next day"
+          onclick="formGoDay(1)">${icon('chevron')}</button>
+      </div>
+      <div class="af-stage" id="af-stage">${formCardHtml(formDays[formIndex])}</div>
+      <div class="af-footer">Swipe for the next day</div>
+      <div class="af-footer">Saves as you tap</div>
+    </div>`;
+}
+
+function formChipsHtml() {
+  const today = new Date().toISOString().slice(0,10);
+  const letters = ['S','M','T','W','T','F','S'];
+  return formDays.map((iso, i) => {
+    const d = new Date(iso + 'T00:00:00');
+    const st = formState[iso]?.status || '';
+    return `<button class="af-chip${st ? ' st-'+st : ''}${i === formIndex ? ' active' : ''}${
+        iso === today ? ' is-today' : ''}"
+      onclick="formShowDay(${i})" aria-label="${fmtDateShort(iso)}"
+      aria-current="${i === formIndex ? 'true' : 'false'}">${letters[d.getDay()]}</button>`;
+  }).join('');
+}
+
+function formCardHtml(iso) {
+  const st = formState[iso] || {};
+  const cur = st.status || '', note = st.note || '';
+  const start = st.start || '', end = st.end || '';
+  const hasTime = !!(start && end);
+
+  const choices = STATUS_CHOICES.map(([val, ic, label]) => `
+    <button class="afc-choice ${cur === val ? 'sel-' + val : ''}" id="afc-${val}"
+      aria-pressed="${cur === val}" onclick="formSetStatus('${iso}', '${val}')">
+      ${icon(ic, 'ic-xl')}<span>${label}</span>
+    </button>`).join('');
+
+  return `<div class="afc" id="af-card-${iso}">
+      <div class="afc-title">${fmtDateLong(iso)}</div>
+      <div class="afc-choices">${choices}</div>
+      <button class="afc-extra ${hasTime || note ? 'has-extra' : ''}" id="af-extra-${iso}"
+        onclick="formToggleExtra('${iso}')">${formExtraLabel(start, end, note)}</button>
+      <div class="afc-panel" id="af-extra-panel-${iso}" style="display:none">
+        ${formTimeRowHtml(iso, start, end, null)}
+        ${formNoteRowHtml(iso, note, null)}
+      </div>
+    </div>`;
+}
+
+function formExtraLabel(start, end, note) {
+  const bits = [];
+  if (start && end) bits.push(`${icon('clock')} ${fmtRangeShort(start, end)}`);
+  if (note) bits.push(`${icon('message')} ${esc(note)}`);
+  return bits.length ? bits.join('<span class="afc-dot">·</span>')
+                     : `${icon('plus')} Time / note`;
+}
+
+function formToggleExtra(iso) {
+  const panel = document.getElementById(`af-extra-panel-${iso}`);
+  if (!panel) return;
+  const showing = panel.style.display !== 'none';
+  panel.style.display = showing ? 'none' : 'block';
+  if (!showing) document.getElementById(`af-start-${iso}`)?.focus();
+}
+
+function formGoDay(delta) { formShowDay(formIndex + delta, delta > 0 ? 'next' : 'prev'); }
+
+function formShowDay(idx, dir) {
+  if (idx < 0 || idx >= formDays.length) return;
+  if (dir === undefined) dir = idx > formIndex ? 'next' : (idx < formIndex ? 'prev' : null);
+  formIndex = idx;
+  const stage = document.getElementById('af-stage');
+  if (!stage) return;
+  stage.innerHTML = formCardHtml(formDays[idx]);
+  if (dir) stage.firstElementChild.classList.add(dir === 'next' ? 'slide-next' : 'slide-prev');
+  formRefreshChips();
+}
+
+function formRefreshChips() {
+  const chips = document.getElementById('af-chips');
+  if (chips) chips.innerHTML = formChipsHtml();
+  document.getElementById('af-prev')?.toggleAttribute('disabled', formIndex === 0);
+  document.getElementById('af-next')?.toggleAttribute('disabled', formIndex === formDays.length - 1);
+}
+
+// Horizontal drags move between days; vertical ones are the page scrolling,
+// so the first few pixels decide which this is and the other is left alone.
+function bindFormSwipe() {
+  const stage = document.getElementById('af-stage');
+  if (!stage) return;
+  let x0 = null, y0 = null, axis = null;
+  stage.addEventListener('touchstart', e => {
+    if (e.target.closest('input, .afc-panel')) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; axis = null;
+  }, { passive: true });
+  stage.addEventListener('touchmove', e => {
+    if (x0 === null || axis) return;
+    const dx = e.touches[0].clientX - x0, dy = e.touches[0].clientY - y0;
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+  }, { passive: true });
+  stage.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    x0 = null;
+    if (axis === 'x' && Math.abs(dx) > 45) formGoDay(dx < 0 ? 1 : -1);
+  });
+  formRefreshChips();
+}
+
 function formUpdateProgress() {
-  const set = formDays.filter(iso => {
-    const row = document.getElementById(`af-day-${iso}`);
-    return row && row.querySelector('.af-choice[class*="sel-"]');
-  }).length;
   const el = document.getElementById('af-progress');
-  if (el) el.innerHTML = `<strong>${set}</strong> of 7 set`;
+  if (el) el.innerHTML = `<strong>${formSetCount()}</strong> of 7 set`;
 }
 
 async function formSetStatus(iso, status) {
+  const prev = formState[iso]?.status || '';
+  const clearing = prev === status;      // tapping your own answer unsets it
+  const saved = clearing ? 'unavailable' : status;
+  const entry = formState[iso] || (formState[iso] = { status: '', note: '', start: '', end: '' });
+  entry.status = clearing ? '' : status;
+
+  // Paint the choice straight away — the save is a background detail.
   const row = document.getElementById(`af-day-${iso}`);
-  if (!row) return;
-  const btns = [...row.querySelectorAll('.af-choice')];
-  const clicked = btns.find(b => b.className.includes('sel-' + status));
-
-  // Tapping the already-selected choice clears it
-  const clearing = !!clicked;
-  btns.forEach(b => b.className = 'af-choice');
-
-  if (!clearing) {
-    const idx = { available: 0, maybe: 1, unavailable: 2 }[status];
-    if (btns[idx]) {
-      btns[idx].className = `af-choice sel-${status}`;
-      // Mark the answer just given: the tick draws itself on, the other two pop.
-      animateIcon(btns[idx].querySelector('.ic'), status === 'available' ? 'ic-draw' : 'ic-pop');
+  if (row) {
+    const btns = [...row.querySelectorAll('.af-choice')];
+    btns.forEach(b => b.className = 'af-choice');
+    if (!clearing) {
+      const idx = STATUS_CHOICES.findIndex(c => c[0] === status);
+      if (btns[idx]) {
+        btns[idx].className = `af-choice sel-${status}`;
+        // Mark the answer just given: the tick draws itself on, the rest pop.
+        animateIcon(btns[idx].querySelector('.ic'), status === 'available' ? 'ic-draw' : 'ic-pop');
+      }
     }
   }
+  const card = document.getElementById(`af-card-${iso}`);
+  if (card) {
+    card.querySelectorAll('.afc-choice').forEach(b => {
+      const mine = b.id === `afc-${status}` && !clearing;
+      b.className = `afc-choice${mine ? ' sel-' + status : ''}`;
+      b.setAttribute('aria-pressed', mine);
+      if (mine) animateIcon(b.querySelector('.ic'), status === 'available' ? 'ic-draw' : 'ic-pop');
+    });
+  }
   formUpdateProgress();
+  formRefreshChips();
 
   // The API overwrites note and times on every save, so resend what's there.
   const note = formCurrentNote(iso);
-  const saved = clearing ? 'unavailable' : status;
-  const start = document.getElementById(`af-start-${iso}`)?.value || '';
-  const end   = document.getElementById(`af-end-${iso}`)?.value || '';
-  const keep  = start && end && start !== end;
+  const start = entry.start, end = entry.end;
+  const keep = start && end && start !== end;
 
   try {
     await api(`/availability/event/${currentEventId}/set`, {
@@ -1690,11 +1950,16 @@ async function formSetStatus(iso, status) {
   } catch(e) {
     toast('Failed to save: ' + e.message);
   }
+
+  // Answering a card hands you the next one; clearing one keeps you put.
+  if (card && !clearing && formIndex < formDays.length - 1) {
+    setTimeout(() => { if (formDays[formIndex] === iso) formGoDay(1); }, 280);
+  }
 }
 
 function formCurrentNote(iso) {
   const input = document.querySelector(`#af-note-${iso} input`);
-  return input ? input.value.trim().slice(0, 60) : '';
+  return input ? input.value.trim().slice(0, 60) : (formState[iso]?.note || '');
 }
 
 // ─── TIME HELPERS ────────────────────────────────────────────────
@@ -1739,10 +2004,7 @@ function formToggleTime(iso) {
   if (!showing) document.getElementById(`af-start-${iso}`)?.focus();
 }
 
-function formDayStatus(iso) {
-  const sel = document.getElementById(`af-day-${iso}`)?.querySelector('.af-choice[class*="sel-"]');
-  return sel ? sel.className.match(/sel-(\w+)/)[1] : '';
-}
+function formDayStatus(iso) { return formState[iso]?.status || ''; }
 
 async function formSaveTime(iso) {
   const start = document.getElementById(`af-start-${iso}`)?.value || '';
@@ -1766,7 +2028,11 @@ async function formClearTime(iso) {
   if (endEl) endEl.value = '';
 
   const status = formDayStatus(iso);
-  if (!status) { document.getElementById(`af-time-${iso}`).style.display = 'none'; return; }
+  if (!status) {
+    const r = document.getElementById(`af-time-${iso}`);
+    if (r && !document.getElementById(`af-card-${iso}`)) r.style.display = 'none';
+    return;
+  }
   await saveDay(iso, status, formCurrentNote(iso), '', '', 'Time cleared');
 }
 
@@ -1777,21 +2043,30 @@ async function saveDay(iso, status, note, start, end, okMsg) {
       method: 'POST',
       body: JSON.stringify({ date: iso, status, note, start_time: start, end_time: end })
     });
+    const entry = formState[iso] || (formState[iso] = { status: '', note: '', start: '', end: '' });
+    entry.status = status; entry.note = note; entry.start = start; entry.end = end;
     updateLocalAvailability(iso, status, note, start, end);
-    refreshTimeButton(iso, start, end);
+    refreshTimeButton(iso, start, end, note);
     if (okMsg) toast(okMsg);
   } catch(e) {
     toast('Failed to save: ' + e.message);
   }
 }
 
-function refreshTimeButton(iso, start, end) {
-  const btn = document.getElementById(`af-timebtn-${iso}`);
-  if (!btn) return;
+function refreshTimeButton(iso, start, end, note = '') {
   const has = !!(start && end);
-  btn.classList.toggle('has-time', has);
-  btn.innerHTML = has ? fmtRangeShort(start, end) : '<span class="af-time-plus">+</span> Time';
-  btn.title = has ? "Change the time you're free" : 'Add a time (optional)';
+  const btn = document.getElementById(`af-timebtn-${iso}`);
+  if (btn) {
+    btn.classList.toggle('has-time', has);
+    btn.innerHTML = has ? fmtRangeShort(start, end) : '<span class="af-time-plus">+</span> Time';
+    btn.title = has ? "Change the time you're free" : 'Add a time (optional)';
+  }
+  // The card view folds time and note into the one button under the choices.
+  const extra = document.getElementById(`af-extra-${iso}`);
+  if (extra) {
+    extra.classList.toggle('has-extra', has || !!note);
+    extra.innerHTML = formExtraLabel(start, end, note);
+  }
 }
 
 function formToggleNote(iso) {
@@ -1803,29 +2078,17 @@ function formToggleNote(iso) {
 }
 
 async function formSaveNote(iso, value) {
-  const note = value.trim();
-  const row = document.getElementById(`af-day-${iso}`);
-  const status = row?.querySelector('.af-choice[class*="sel-"]')
-    ? row.querySelector('.af-choice[class*="sel-"]').className.match(/sel-(\w+)/)[1]
-    : '';
+  const note = value.trim().slice(0, 60);
+  const status = formDayStatus(iso);
   if (!status) { toast('Pick a status for that day first'); return; }
 
-  const btn = row.querySelector('.af-note-btn');
+  const btn = document.getElementById(`af-day-${iso}`)?.querySelector('.af-note-btn');
   if (btn) btn.classList.toggle('has-note', !!note);
 
-  try {
-    const start = document.getElementById(`af-start-${iso}`)?.value || '';
-    const end   = document.getElementById(`af-end-${iso}`)?.value || '';
-    const keep  = start && end && start !== end;
-    await api(`/availability/event/${currentEventId}/set`, {
-      method: 'POST',
-      body: JSON.stringify({ date: iso, status, note,
-                             start_time: keep ? start : '', end_time: keep ? end : '' })
-    });
-    updateLocalAvailability(iso, status, note, keep ? start : '', keep ? end : '');
-  } catch(e) {
-    toast('Failed to save note: ' + e.message);
-  }
+  const start = document.getElementById(`af-start-${iso}`)?.value || '';
+  const end   = document.getElementById(`af-end-${iso}`)?.value || '';
+  const keep  = start && end && start !== end;
+  await saveDay(iso, status, note, keep ? start : '', keep ? end : '', '');
 }
 
 async function formAllFree() {
@@ -3352,6 +3615,14 @@ function fmtDateShort(iso) {
   try {
     const d = new Date(iso + 'T00:00:00');
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  } catch(e) { return iso; }
+}
+
+// "Saturday, November 28" — the heading on a day card
+function fmtDateLong(iso) {
+  try {
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   } catch(e) { return iso; }
 }
 
