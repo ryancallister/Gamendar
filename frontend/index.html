@@ -44,6 +44,15 @@
     --mono: 'DM Mono', monospace;
   }
 
+  /* Nothing may stick out sideways: on a phone a page wider than the
+     viewport is one you have to pinch-zoom out of to read. `clip` rather
+     than `hidden` because `hidden` would make the body a scroll container
+     and strand the sticky topbar. */
+  html {
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;   /* don't inflate text in landscape */
+    text-size-adjust: 100%;
+  }
   body {
     font-family: var(--font);
     background: var(--bg);
@@ -51,6 +60,8 @@
     min-height: 100vh;
     font-size: 15px;
     line-height: 1.5;
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   /* AUTH */
@@ -140,11 +151,62 @@
   .nav-btn.active { background: var(--surface2); color: var(--text); }
 
   .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+  /* ── Collapsed navigation ─────────────────────────────────── */
+  /* The bar holds a logo, three pages, an account chip and Sign out. That
+     is more than a phone has room for, and a bar that overflows takes the
+     whole page with it, so below the breakpoint it all folds into here. */
+  .nav-toggle {
+    display: none; width: 36px; height: 36px; border-radius: 9px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--bg); color: var(--text2);
+    align-items: center; justify-content: center; font-size: 18px;
+  }
+  .nav-toggle:hover { color: var(--text); }
+  .nav-toggle[aria-expanded="true"] { background: var(--surface2); color: var(--text); }
+
+  .nav-scrim {
+    display: none; position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.45);
+  }
+  .nav-scrim.open { display: block; }
+
+  .nav-menu {
+    display: none; position: fixed; z-index: 95; top: 48px; right: 8px; left: 8px;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 6px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.5);
+  }
+  .nav-menu.open { display: block; animation: nav-drop 0.16s ease-out; }
+  @keyframes nav-drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .nav-menu.open { animation: none; } }
+
+  .nm-item, .nm-account {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 11px 12px; border-radius: 9px; border: none; background: none; cursor: pointer;
+    font-family: var(--font); font-size: 15px; color: var(--text2); text-align: left;
+  }
+  .nm-item:hover, .nm-account:hover { background: var(--surface2); color: var(--text); }
+  .nm-item.active { background: var(--accent-glow); color: var(--accent); }
+  .nm-item.danger { color: var(--text3); }
+  .nm-item.danger:hover { color: var(--red); background: var(--red-bg); }
+  .nm-sep { height: 1px; background: var(--border); margin: 6px 4px; }
+  .nm-account { padding: 10px 12px; }
+  .nm-account .avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--accent2); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .nm-who { min-width: 0; flex: 1; }
+  .nm-name { font-size: 15px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nm-role { font-size: 12px; color: var(--text3); }
+  .nm-go { color: var(--text3); font-size: 14px; }
   .user-chip {
     display: flex; align-items: center; gap: 8px;
     background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px;
     font-size: 14px;
   }
+  /* A long username must shorten rather than push the bar off-screen */
+  .user-chip #user-label { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-logo, .topbar-nav, .topbar-right { flex-shrink: 0; }
   .user-chip .avatar {
     width: 24px; height: 24px; border-radius: 50%; background: var(--accent2);
     display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600;
@@ -722,7 +784,11 @@
   .status-dot.active { background: var(--green); }
   .status-dot.inactive { background: var(--red); }
 
-  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .table-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 
   select {
     background: var(--bg); border: 1px solid var(--border2); border-radius: 8px;
@@ -884,19 +950,27 @@
   @media (max-width: 640px) {
     .mobile-notes-section { margin-top: 1.5rem; }
     .topbar { padding: 0 0.75rem; gap: 0.4rem; height: 48px; }
-    .topbar-logo { font-size: 14px; }
+    .topbar-logo { font-size: 15px; }
     .topbar-logo .dot { width: 6px; height: 6px; }
-    .topbar-nav { margin-left: 0.4rem; }
-    .nav-btn { padding: 5px 10px; font-size: 13px; }
-    .user-chip { padding: 4px 8px; gap: 5px; }
-    .user-chip span#user-label { display: none; }
-    .user-chip .avatar { width: 22px; height: 22px; font-size: 10px; }
-    .badge { font-size: 10px; padding: 2px 6px; }
+    /* Pages, account and Sign out all move into the menu */
+    .topbar-nav, .topbar-right .user-chip, .topbar-right .btn { display: none; }
+    .nav-toggle { display: flex; }
     .btn.btn-ghost.btn-sm { padding: 5px 8px; font-size: 12px; }
 
+    /* iOS zooms the page in when you focus a control smaller than 16px and
+       never zooms back out, which is the other half of "it's zoomed in".
+       16px is the platform's threshold, and the only way to opt out of the
+       zoom is to meet it, so this overrides every per-control size below
+       the breakpoint — hence the !important — and the handful of controls
+       with a fixed height get room for the larger text. */
+    input, select, textarea { font-size: 16px !important; }
+    .avail-select-compact, .avail-select { height: 34px; }
+    .avail-note-input { height: 30px; }
+
     .main { padding: 1rem 0.75rem; }
-    body { overflow-x: hidden; }
-    #page-event-detail { overflow-x: hidden; }
+    /* `overflow-x: hidden` here made the body its own scroll container and
+       unstuck the topbar; the page-wide `clip` does the job without that. */
+    #page-event-detail { overflow-x: clip; }
     .page-header { margin-bottom: 1.25rem; }
     .page-header h2 { font-size: 18px; }
 
@@ -968,8 +1042,31 @@
         <span class="badge" id="user-role-badge"></span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign out</button>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false"
+              aria-controls="nav-menu" onclick="toggleNavMenu(event)"><span data-icon="menu"></span></button>
     </div>
   </div>
+
+  <div class="nav-scrim" id="nav-scrim" onclick="closeNavMenu()"></div>
+  <nav class="nav-menu" id="nav-menu" aria-label="Main menu">
+    <button class="nm-account" onclick="navGo('account')">
+      <div class="avatar" id="menu-avatar"></div>
+      <div class="nm-who">
+        <div class="nm-name" id="menu-label"></div>
+        <div class="nm-role" id="menu-role"></div>
+      </div>
+      <span class="nm-go" data-icon="chevron"></span>
+    </button>
+    <button class="nm-item" id="mnav-events" onclick="navGo('events')">
+      <span data-icon="calendar"></span> Events</button>
+    <button class="nm-item" id="mnav-schedule" onclick="navGo('schedule')">
+      <span data-icon="clock"></span> My Schedule</button>
+    <button class="nm-item" id="mnav-admin" onclick="navGo('admin')" style="display:none">
+      <span data-icon="users"></span> Admin</button>
+    <div class="nm-sep"></div>
+    <button class="nm-item danger" onclick="navGo('logout')">
+      <span data-icon="logout"></span> Sign out</button>
+  </nav>
 
   <div class="main">
     <!-- EVENTS PAGE -->
@@ -1357,8 +1454,12 @@ async function enterApp() {
   document.getElementById('user-avatar').textContent = currentUser.username[0].toUpperCase();
   document.getElementById('user-label').textContent = currentUser.username;
   document.getElementById('user-role-badge').textContent = currentUser.role;
+  document.getElementById('menu-avatar').textContent = currentUser.username[0].toUpperCase();
+  document.getElementById('menu-label').textContent = currentUser.username;
+  document.getElementById('menu-role').textContent = currentUser.role;
   if (currentUser.role === 'admin') {
     document.getElementById('nav-admin').style.display = '';
+    document.getElementById('mnav-admin').style.display = '';
     document.getElementById('create-event-btn').style.display = '';
   }
   showPage('events');
@@ -1368,11 +1469,13 @@ async function enterApp() {
 function showPage(name) {
   if (name === 'admin' && currentUser?.role !== 'admin') return;
   if (name !== 'event-detail') { stopEventPolling(); currentEventId = null; }
+  closeNavMenu();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn, .nm-item').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + (name === 'event-detail' ? 'event-detail' : name)).classList.add('active');
-  const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
-  if (navEl) navEl.classList.add('active');
+  const key = name === 'event-detail' ? 'events' : name;
+  document.getElementById('nav-' + key)?.classList.add('active');
+  document.getElementById('mnav-' + key)?.classList.add('active');
   if (name === 'events') loadEvents();
   if (name === 'schedule') loadSchedule();
   if (name === 'admin') { loadUsers(); loadSsoSettings(); loadRecurringSettings(); loadDiscordSettings(); loadSignalSettings(); loadSignalTemplates(); }
@@ -1503,6 +1606,38 @@ async function loadEventDetail(eventId, isPast = false) {
   }
 }
 
+// ─── COLLAPSED NAVIGATION ────────────────────────────────────────
+function isNavMenuOpen() {
+  return !!document.getElementById('nav-menu')?.classList.contains('open');
+}
+
+function openNavMenu() {
+  document.getElementById('nav-menu')?.classList.add('open');
+  document.getElementById('nav-scrim')?.classList.add('open');
+  document.getElementById('nav-toggle')?.setAttribute('aria-expanded', 'true');
+}
+
+function closeNavMenu() {
+  document.getElementById('nav-menu')?.classList.remove('open');
+  document.getElementById('nav-scrim')?.classList.remove('open');
+  document.getElementById('nav-toggle')?.setAttribute('aria-expanded', 'false');
+}
+
+function toggleNavMenu(e) {
+  e?.stopPropagation();
+  isNavMenuOpen() ? closeNavMenu() : openNavMenu();
+}
+
+// showPage closes the menu itself; account and sign-out don't go through it.
+function navGo(where) {
+  closeNavMenu();
+  if (where === 'account') return openAccount();
+  if (where === 'logout') return doLogout();
+  showPage(where);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNavMenu(); });
+
 // ─── RESPONSIVE HELPERS ──────────────────────────────────────────
 const COMPACT_MQ = window.matchMedia('(max-width: 640px)');
 function isCompactView() { return COMPACT_MQ.matches; }
@@ -1510,6 +1645,7 @@ function isCompactView() { return COMPACT_MQ.matches; }
 // Crossing the breakpoint switches the grid's labels and swaps the
 // availability form between the seven-day list and the card deck.
 COMPACT_MQ.addEventListener('change', () => {
+  closeNavMenu();           // the toggle that opened it is gone at this width
   if (lastGridData) renderWeekGrid(lastGridData, lastGridIsPast);
   if (currentEventData) renderAvailForm(currentEventData, lastGridIsPast);
 });
@@ -3191,6 +3327,8 @@ const ICONS = {
   chevronDown:'<path d="M5.2 9.5L12 16.3l6.8-6.8"/>',
   arrowLeft: '<path d="M19.5 12H4.8"/><path d="M11 5.3L4.3 12 11 18.7"/>',
   dot:       '<circle cx="12" cy="12" r="4.6" class="ic-solid"/>',
+  menu:      '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  logout:    '<path d="M15 7.6V5.7A1.7 1.7 0 0 0 13.3 4H5.7A1.7 1.7 0 0 0 4 5.7v12.6A1.7 1.7 0 0 0 5.7 20h7.6a1.7 1.7 0 0 0 1.7-1.7v-1.9"/><path d="M20.5 12H10.2"/><path d="M17.5 9l3 3-3 3"/>',
 };
 
 function icon(name, extra = '') {
