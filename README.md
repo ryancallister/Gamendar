@@ -299,6 +299,28 @@ Same three automatic message types as Discord. Message templates are fully edita
 
 ---
 
+## Icons
+
+The interface uses no emoji. Every icon is an outline SVG drawn on one 24x24
+grid with round caps, defined once in the `ICONS` table in
+`frontend/index.html` and rendered in `currentColor` so it always matches the
+text beside it. Static markup asks for one with `data-icon="name"`; anything
+built in JavaScript calls `icon(name)`.
+
+Animation is only ever used to mark something that just happened: the tick
+draws itself on when you answer a day, the other two choices pop, a button
+shows a spinning icon while its request is in flight, and the bell rings after
+a test notification. All of it is dropped under
+`prefers-reduced-motion: reduce`.
+
+One exception, for a platform reason: a `<select>`'s `<option>` elements can
+only hold text, so the availability dropdown in the Everyone grid keeps plain
+`✓ ~ ✗ —` glyphs. The read-only pills next to it are icons.
+
+Message templates for Signal, Discord and push still contain emoji. Those are
+message content rather than interface styling, they are editable from the
+admin panel, and an emoji reads well in a chat app.
+
 ## Project Structure
 
 ```
