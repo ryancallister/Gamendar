@@ -123,6 +123,26 @@ def busy_on(blocks, weekday):
     return merge_spans(spans)
 
 
+def labelled_spans_on(blocks, weekday):
+    """Each block's own span on `weekday`, unmerged and still named.
+
+    busy_on() merges overlapping spans, which is what the free-time maths
+    needs but loses the labels. A chart wants to say "Work" and "Bedtime", so
+    this keeps them apart.
+    """
+    yesterday = (weekday - 1) % 7
+    spans = []
+    for block in blocks:
+        start, end = block['start'], block['end']
+        wraps = end < start
+        if weekday in block['days']:
+            spans.append({'label': block['label'], 'start': start,
+                          'end': MINUTES_PER_DAY if wraps else end})
+        if wraps and yesterday in block['days']:
+            spans.append({'label': block['label'], 'start': 0, 'end': end})
+    return sorted(spans, key=lambda s: (s['start'], s['end']))
+
+
 def free_on(blocks, weekday):
     """The gaps between the blocks, in order."""
     gaps = []

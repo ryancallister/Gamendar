@@ -435,6 +435,23 @@
   }
   .tl-block.available { background: rgba(62,207,142,0.28); color: var(--green); border: 1px solid rgba(62,207,142,0.5); }
   .tl-block.maybe     { background: rgba(245,166,35,0.25); color: var(--amber); border: 1px solid rgba(245,166,35,0.5); }
+  /* Blocked-out time: hatched so it reads as "not available" at a glance
+     and never competes with the solid availability block drawn over it. */
+  .tl-busy {
+    position: absolute; top: 2px; bottom: 2px; border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.022);
+    background-image: repeating-linear-gradient(45deg,
+      rgba(255, 255, 255, 0.11) 0 5px, rgba(255, 255, 255, 0) 5px 10px);
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; color: var(--text2);
+    overflow: hidden; white-space: nowrap; padding: 0 4px;
+  }
+  .tl-busy span { text-shadow: 0 0 5px var(--bg), 0 0 5px var(--bg); }
+  /* A block that falls outside the hours shown keeps a sliver at the edge
+     so the person does not silently vanish from the chart. */
+  .tl-block.clipped-out { opacity: 0.55; }
+
   .tl-overlap {
     position: absolute; top: 0; bottom: 0; background: rgba(108,142,245,0.16);
     border-left: 1px dashed rgba(108,142,245,0.7); border-right: 1px dashed rgba(108,142,245,0.7);
@@ -1351,7 +1368,12 @@ async function loadEventDetail(eventId, isPast = false) {
   showPage('event-detail');
   document.getElementById('week-grid-wrap').innerHTML = '<div style="padding:3rem;text-align:center"><div class="spinner"></div></div>';
   try {
-    const data = await api(`/events/${eventId}`);
+    // Fetched together: the chart draws both on the same row.
+    const [data, busy] = await Promise.all([
+      api(`/events/${eventId}`),
+      api(`/schedule/busy/${eventId}`).catch(() => ({})),
+    ]);
+    myBusy = busy || {};
     currentEventData = data;
     const ev = data.event;
     document.getElementById('detail-title').textContent = ev.title;
@@ -1408,6 +1430,7 @@ let detailView = null;
 let lastGridData = null;
 let lastGridIsPast = false;
 let timesDay = null;   // which day the time overlay is showing
+let myBusy = {};       // my own blocked-out spans, by date, for the chart
 let lastDayIsos = [];  // the current event's 7 day keys
 
 function switchDetailView(view) {
@@ -2088,8 +2111,8 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
     .map(a => {
       const start = toMinutes(a.start_time), rawEnd = toMinutes(a.end_time);
       if (start === null || rawEnd === null) return null;
-      return { username: byUser.get(a.user_id).username, status: a.status,
-               start, end: rangeEndMinutes(start, rawEnd) };
+      return { userId: a.user_id, username: byUser.get(a.user_id).username,
+               status: a.status, start, end: rangeEndMinutes(start, rawEnd) };
     })
     .filter(Boolean)
     .sort((a, b) => a.start - b.start || a.end - b.end);
@@ -2114,6 +2137,16 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
       <div class="times-days">${chips}</div>
     </div>`;
 
+  // My own blocked-out time for this day, drawn on my row only — other
+  // people's labels are private.
+  const mySpans = (myBusy[timesDay] || []);
+  const iAmListed = blocks.some(b => b.userId === currentUser.id);
+  if (mySpans.length && !iAmListed) {
+    // Worth a row even with no time of my own: it still shows my day.
+    blocks.push({ userId: currentUser.id, username: currentUser.username,
+                  status: null, start: null, end: null });
+  }
+
   if (!blocks.length) {
     const freeNote = untimed
       ? `<div class="tl-empty">${untimed} ${untimed === 1 ? 'person is' : 'people are'} free this day but haven't given a time — add yours under <strong>My week</strong>.</div>`
@@ -2121,20 +2154,48 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
     return `<div class="times-panel" id="times-panel">${head}${freeNote}</div>`;
   }
 
-  // Axis window: whole hours around the blocks, at least 4h wide
-  const lo = Math.floor(Math.min(...blocks.map(b => b.start)) / 60) * 60;
-  let hi = Math.ceil(Math.max(...blocks.map(b => b.end)) / 60) * 60;
-  if (hi - lo < 240) hi = lo + 240;
+  // A fixed 06:00–24:00 axis rather than one that fits the data. The small
+  // hours are dead time for arranging an evening, and letting a 1am finish
+  // stretch the scale squeezes the part of the day anyone cares about.
+  // Anything outside is clipped; the labels still name the real times.
+  const lo = DAY_AXIS_START, hi = DAY_AXIS_END;
   const span = hi - lo;
-  const pct = m => ((m - lo) / span) * 100;
+  const clampToAxis = m => Math.min(Math.max(m, lo), hi);
+  const pct = m => ((clampToAxis(m) - lo) / span) * 100;
 
-  // The overlay proper: the window that works for everyone shown
-  const olStart = Math.max(...blocks.map(b => b.start));
-  const olEnd   = Math.min(...blocks.map(b => b.end));
-  const hasOverlap = blocks.length > 1 && olEnd > olStart;
+  // The overlay proper: the window that works for everyone who gave a time
+  const timedBlocks = blocks.filter(b => b.start !== null);
+  const olStart = Math.max(...timedBlocks.map(b => b.start));
+  const olEnd   = Math.min(...timedBlocks.map(b => b.end));
+  const hasOverlap = timedBlocks.length > 1 && olEnd > olStart;
   const band = hasOverlap
     ? `<div class="tl-overlap" style="left:${pct(olStart)}%;width:${pct(olEnd) - pct(olStart)}%"></div>`
     : '';
+
+  // Hatched bars for my blocked-out time, drawn under everything else.
+  const busyBars = mySpans.map(sp => {
+    const left = pct(sp.start), width = pct(sp.end) - pct(sp.start);
+    if (width <= 0) return '';
+    // Below about half an hour there is no room for a word; the tooltip
+    // still carries it. (The axis is 18h wide, so 4% is ~45 minutes.)
+    const label = width >= 4 ? `<span>${esc(sp.label)}</span>` : '';
+    return `<div class="tl-busy" style="left:${left}%;width:${width}%"
+      title="${esc(sp.label)} · ${fmtTime(sp.start)} – ${fmtTime(sp.end)}">${label}</div>`;
+  }).join('');
+
+  const availBlock = b => {
+    if (b.start === null) return '';
+    const left = pct(b.start);
+    const width = pct(b.end) - pct(b.start);
+    const outside = width <= 0;   // entirely before 06:00 or after midnight
+    const wrapped = b.end > DAY_AXIS_END;
+    return `<div class="tl-block ${b.status}${outside ? ' clipped-out' : ''}"
+         style="left:${outside && b.start >= hi ? 98 : left}%;width:${outside ? 2 : width}%"
+         title="${esc(b.username)}: ${fmtTime(b.start)} – ${fmtTime(b.end)}${
+           outside ? ' — outside the hours shown' : (wrapped ? ' (runs past midnight)' : '')}">
+      ${outside ? '' : `${fmtShort(b.start)}–${fmtShort(b.end)}`}
+    </div>`;
+  };
 
   const rows = blocks.map(b => `
     <div class="tl-row">
@@ -2142,18 +2203,10 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
         <div class="mini-avatar">${esc(b.username[0].toUpperCase())}</div>
         <span class="uname">${esc(b.username)}</span>
       </div>
-      <div class="tl-track">${band}
-        <div class="tl-block ${b.status}"
-             style="left:${pct(b.start)}%;width:${pct(b.end) - pct(b.start)}%"
-             title="${esc(b.username)}: ${fmtTime(b.start)} – ${fmtTime(b.end)}${b.end >= 1440 ? ' (next day)' : ''}">
-          ${fmtShort(b.start)}–${fmtShort(b.end)}
-        </div>
-      </div>
+      <div class="tl-track">${b.userId === currentUser.id ? busyBars : ''}${band}${availBlock(b)}</div>
     </div>`).join('');
 
-  let step = 60;
-  if (span > 300) step = 120;
-  if (span > 600) step = 180;
+  const step = 180;        // every three hours across the fixed window
   const tickAt = [];
   for (let m = lo; m <= hi; m += step) tickAt.push(m);
   // The step rarely lands exactly on the end, so label it explicitly —
@@ -2171,13 +2224,16 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
   }).join('');
 
   let note;
-  if (blocks.length === 1) {
-    note = `<div class="tl-overlap-note none">Only <strong>${esc(blocks[0].username)}</strong> has given a time${untimedNote}</div>`;
+  if (!timedBlocks.length) {
+    note = `<div class="tl-overlap-note none">Your blocked-out time is shown.
+      Nobody has given a time for this day yet${untimedNote}</div>`;
+  } else if (timedBlocks.length === 1) {
+    note = `<div class="tl-overlap-note none">Only <strong>${esc(timedBlocks[0].username)}</strong> has given a time${untimedNote}</div>`;
   } else if (hasOverlap) {
-    note = `<div class="tl-overlap-note">All ${blocks.length} overlap
+    note = `<div class="tl-overlap-note">All ${timedBlocks.length} overlap
       <strong>${fmtTime(olStart)} – ${fmtTime(olEnd)}</strong> (${fmtDur(olEnd - olStart)})${untimedNote}</div>`;
   } else {
-    note = `<div class="tl-overlap-note none">No window works for <strong>all ${blocks.length}</strong> on this day${untimedNote}</div>`;
+    note = `<div class="tl-overlap-note none">No window works for <strong>all ${timedBlocks.length}</strong> on this day${untimedNote}</div>`;
   }
 
   return `<div class="times-panel" id="times-panel">
@@ -2874,6 +2930,11 @@ function hydrateIcons(root = document) {
 // sees the availability it produces, never the labels.
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// The times chart runs 06:00 to midnight. Midnight to 6am is dead time for
+// arranging an evening, and including it squeezes the hours that matter.
+const DAY_AXIS_START = 6 * 60;
+const DAY_AXIS_END = 24 * 60;
 let scheduleBlocks = [];
 let blockDays = [];          // which chips are lit in the open modal
 let editingBlockId = null;

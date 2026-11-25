@@ -144,6 +144,29 @@ def _plan(event, blocks):
     return days
 
 
+@schedule_bp.route('/busy/<int:event_id>', methods=['GET'])
+@token_required
+def busy(current_user, event_id):
+    """Your own blocked-out spans for each day of this event's week.
+
+    Only ever your own: the chart draws these on your row, and somebody else's
+    labels are none of your business.
+    """
+    db = get_db()
+    event = db.execute('SELECT * FROM events WHERE id = ?', (event_id,)).fetchone()
+    if not event:
+        return jsonify({'error': 'Event not found'}), 404
+
+    blocks = _my_blocks(db, current_user['id'])
+    out = {}
+    day = date.fromisoformat(event['week_start'])
+    last = date.fromisoformat(event['week_end'])
+    while day <= last:
+        out[day.isoformat()] = sb.labelled_spans_on(blocks, day.weekday())
+        day += timedelta(days=1)
+    return jsonify(out)
+
+
 @schedule_bp.route('/apply/<int:event_id>', methods=['POST'])
 @token_required
 def apply(current_user, event_id):
