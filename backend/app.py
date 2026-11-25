@@ -13,6 +13,7 @@ from routes.discord import discord_bp, start_scheduler
 from routes.signal import signal_bp, start_signal_scheduler
 from routes.recurring import recurring_bp, start_recurring_scheduler
 from routes.push import push_bp
+from routes.schedule import schedule_bp
 import push_service
 import mimetypes
 import os
@@ -80,6 +81,7 @@ app.register_blueprint(discord_bp,       url_prefix='/api/discord')
 app.register_blueprint(signal_bp,        url_prefix='/api/signal')
 app.register_blueprint(recurring_bp,     url_prefix='/api/recurring')
 app.register_blueprint(push_bp,          url_prefix='/api/push')
+app.register_blueprint(schedule_bp,      url_prefix='/api/schedule')
 
 start_scheduler(app)
 start_signal_scheduler(app)

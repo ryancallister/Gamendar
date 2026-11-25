@@ -12,6 +12,7 @@ This is 99% **AI Generated/Vibe Coded**. I made this for use with my friends as 
 - **Weekly events** — admins create events with a date range; the newest event is shown front and centre, older ones are collapsible under "Previous events" (view-only)
 - **Per-day availability** — each user selects Available / Unavailable / Maybe for each day via a dropdown
 - **Optional notes** — users can attach a short note to any day (e.g. "After 8pm only")
+- **My Schedule** — anyone can save the time they're regularly busy (work, classes, the gym, sleep) and apply it to a week in one tap; blocks are private, and every day stays editable afterwards
 - **Optional times** — users can add a start/end time per day in "My week"; a range that ends before it starts is read as running past midnight (e.g. 9pm–1am)
 - **Time overlay** — the "Everyone" view charts everyone's times for a chosen day as blocks and highlights the window that works for all of them
 - **Live summary row** — shows how many active users are free each day, updates instantly
@@ -193,6 +194,30 @@ anyone who can reach the container port directly could set it.
 
 ---
 
+## My Schedule
+
+Most people are busy at the same times every week, so **My Schedule** holds
+those once instead of re-entering them for every event. Add a block — a label,
+the days it applies to, and a time range — then open any event and press
+**Apply my schedule** next to *Copy last week* and *All free*.
+
+An end time before the start means the block runs past midnight, so a
+`21:00–07:00` bedtime blocks the end of one day and the start of the next.
+
+Applying works out what each day has left once the blocks are removed and fills
+that in as your availability. Where a day has more than one free stretch it
+offers the **latest** one, because a schedule is really a list of commitments
+and what people mean is "I'm free once they're done" — picking the longest gap
+would answer "00:00–07:00" for a weeknight whose small hours aren't explicitly
+blocked. A day with nothing blocked is marked available with no times; a day
+blocked end to end is marked unavailable.
+
+It's a starting point rather than a lock: every day is still editable by hand
+afterwards, and notes you've written are left alone.
+
+Blocks are **private**. Labels are only ever returned to the person who wrote
+them, and the group only sees the availability they produce.
+
 ## Notifications on your phone or desktop
 
 Click your name in the top right → **Notify me on this device**. Allow the
@@ -273,6 +298,28 @@ reported — who changed, from what to what, and the recomputed tally.
 Same three automatic message types as Discord. Message templates are fully editable from the admin panel — each template supports placeholders (e.g. `{title}`, `{available_names}`, `{summary_date}`) and includes a live preview with sample data. Templates can be reset to defaults at any time.
 
 ---
+
+## Icons
+
+The interface uses no emoji. Every icon is an outline SVG drawn on one 24x24
+grid with round caps, defined once in the `ICONS` table in
+`frontend/index.html` and rendered in `currentColor` so it always matches the
+text beside it. Static markup asks for one with `data-icon="name"`; anything
+built in JavaScript calls `icon(name)`.
+
+Animation is only ever used to mark something that just happened: the tick
+draws itself on when you answer a day, the other two choices pop, a button
+shows a spinning icon while its request is in flight, and the bell rings after
+a test notification. All of it is dropped under
+`prefers-reduced-motion: reduce`.
+
+One exception, for a platform reason: a `<select>`'s `<option>` elements can
+only hold text, so the availability dropdown in the Everyone grid keeps plain
+`✓ ~ ✗ —` glyphs. The read-only pills next to it are icons.
+
+Message templates for Signal, Discord and push still contain emoji. Those are
+message content rather than interface styling, they are editable from the
+admin panel, and an emoji reads well in a chat app.
 
 ## Project Structure
 
@@ -356,6 +403,17 @@ All endpoints are under `/api/`. Protected routes require `Authorization: Bearer
 `set` and `bulk` take optional `start_time` / `end_time` as `"HH:MM"`. Send both or
 neither; send empty strings to clear. Every save overwrites `note`, `start_time` and
 `end_time`, so clients must resend the values they want to keep.
+
+### My Schedule
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/schedule/` | User | Your blocked-out time |
+| `POST` | `/api/schedule/` | User | Add a block |
+| `PUT` | `/api/schedule/:id` | User | Edit one of yours |
+| `DELETE` | `/api/schedule/:id` | User | Remove one of yours |
+| `GET` | `/api/schedule/preview/:event_id` | User | What applying would set, without setting it |
+| `POST` | `/api/schedule/apply/:event_id` | User | Fill a week in from your schedule |
 
 ### Admin
 

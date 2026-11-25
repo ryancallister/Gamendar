@@ -652,6 +652,93 @@
   .notif-note { font-size: 12px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
   .notif-note strong { color: var(--text2); font-weight: 600; }
 
+  /* ── Icons ────────────────────────────────────────────────── */
+  /* Outline set on one 24x24 grid, round caps, drawn in currentColor so an
+     icon always matches the text beside it. Sized in em so it scales with
+     that text instead of needing a size everywhere it is used. */
+  .ic {
+    width: 1em; height: 1em; flex-shrink: 0;
+    fill: none; stroke: currentColor; stroke-width: 1.75;
+    stroke-linecap: round; stroke-linejoin: round;
+    vertical-align: -0.145em; overflow: visible;
+  }
+  .ic-lg { width: 1.3em; height: 1.3em; }
+  .ic-xl { width: 2.1em; height: 2.1em; stroke-width: 1.5; }
+  .ic-solid { fill: currentColor; stroke: none; }
+
+  /* Animation is only ever used to mark something that just happened. */
+  @keyframes ic-spin { to { transform: rotate(360deg); } }
+  @keyframes ic-swing {
+    0%, 100% { transform: rotate(0); } 15% { transform: rotate(15deg); }
+    35% { transform: rotate(-11deg); } 55% { transform: rotate(7deg); }
+    75% { transform: rotate(-4deg); }
+  }
+  @keyframes ic-pop {
+    0% { transform: scale(0.55); opacity: 0; }
+    65% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes ic-draw { to { stroke-dashoffset: 0; } }
+  .ic-spin { animation: ic-spin 0.85s linear infinite; transform-origin: 50% 50%; }
+  .ic-swing { animation: ic-swing 0.9s ease-in-out; transform-origin: 50% 18%; }
+  .ic-pop { animation: ic-pop 0.26s cubic-bezier(.2,1.3,.5,1); transform-origin: 50% 50%; }
+  .ic-draw * { stroke-dasharray: 34; stroke-dashoffset: 34; animation: ic-draw 0.34s ease-out forwards; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ic-spin, .ic-swing, .ic-pop { animation: none; }
+    .ic-draw * { animation: none; stroke-dashoffset: 0; }
+  }
+
+  /* ── My Schedule ──────────────────────────────────────────── */
+  .sched-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.25rem; }
+  .sched-card {
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 1.1rem 1.25rem;
+  }
+  .sched-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px; color: var(--text2);
+  }
+  .sched-body { flex: 1; min-width: 0; }
+  .sched-label { font-size: 16px; font-weight: 700; }
+  .sched-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+  .sched-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .sched-empty {
+    background: var(--surface); border: 1px dashed var(--border2);
+    border-radius: var(--radius-lg); padding: 2rem; text-align: center; color: var(--text2);
+  }
+  .sched-empty strong { color: var(--text); display: block; margin-bottom: 4px; }
+
+  .day-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .day-chip {
+    flex: 1 1 auto; min-width: 0; text-align: center;
+    padding: 8px 10px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--bg); color: var(--text2);
+    font-size: 13px; font-weight: 600; font-family: var(--font); transition: all 0.12s;
+  }
+  .day-chip:hover { color: var(--text); border-color: var(--text3); }
+  .day-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .day-quick { display: flex; gap: 1.1rem; margin-top: 0.8rem; }
+  .day-quick button {
+    background: none; border: none; padding: 0; cursor: pointer;
+    color: var(--accent); font-size: 13px; font-family: var(--font); text-decoration: underline;
+  }
+  .form-hint { margin-top: 6px; font-size: 12px; color: var(--text3); line-height: 1.5; }
+  .time-pair { display: flex; gap: 1rem; }
+  .time-pair .form-group { flex: 1; min-width: 0; }
+  .time-pair input[type="time"] { width: 100%; color-scheme: dark; }
+
+  @media (max-width: 640px) {
+    .sched-card { flex-wrap: wrap; }
+    .sched-actions { width: 100%; }
+    .sched-actions .btn { flex: 1; }
+    .time-pair { flex-direction: column; gap: 0; }
+    .day-chip { padding: 8px 8px; font-size: 12px; }
+  }
+
   .section-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1rem; }
 
   .template-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
@@ -742,7 +829,7 @@
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="icon">📅</div>
+      <div class="icon" data-icon="calendar" data-icon-class="ic-xl"></div>
       <div>
         <h1>Gamendar</h1>
         <span>Team weekly scheduler</span>
@@ -765,6 +852,7 @@
     <div class="topbar-logo"><div class="dot"></div>Gamendar</div>
     <nav class="topbar-nav">
       <button class="nav-btn active" onclick="showPage('events')" id="nav-events">Events</button>
+      <button class="nav-btn" onclick="showPage('schedule')" id="nav-schedule">My Schedule</button>
       <button class="nav-btn" onclick="showPage('admin')" id="nav-admin" style="display:none">Admin</button>
     </nav>
     <div class="topbar-right">
@@ -792,9 +880,21 @@
       <div class="events-grid" id="events-list"><div class="spinner"></div></div>
     </div>
 
+    <!-- MY SCHEDULE PAGE -->
+    <div class="page" id="page-schedule">
+      <div class="page-header">
+        <div>
+          <h2>My Schedule</h2>
+          <p>Block out the time you're regularly busy, then apply it to any week</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:auto" onclick="openScheduleBlock()"><span data-icon="plus"></span> Add blocked-out time</button>
+      <div id="schedule-list" class="sched-list"><div class="spinner"></div></div>
+    </div>
+
     <!-- EVENT DETAIL PAGE -->
     <div class="page" id="page-event-detail">
-      <button class="back-btn" onclick="showPage('events')">← Back to events</button>
+      <button class="back-btn" onclick="showPage('events')"><span data-icon="arrowLeft"></span> Back to events</button>
       <div class="page-header">
         <div>
           <h2 id="detail-title">Event</h2>
@@ -809,8 +909,8 @@
         <div class="legend-item"><div class="legend-dot red"></div>Unavailable</div>
         <div class="legend-item"><div class="legend-dot gray"></div>No response</div>
         <div class="view-toggle" id="view-toggle" style="margin-left:auto">
-          <button class="view-toggle-btn" id="vt-form" onclick="switchDetailView('form')">📝 My week</button>
-          <button class="view-toggle-btn" id="vt-grid" onclick="switchDetailView('grid')">📊 Everyone</button>
+          <button class="view-toggle-btn" id="vt-form" onclick="switchDetailView('form')"><span data-icon="pencil"></span> My week</button>
+          <button class="view-toggle-btn" id="vt-grid" onclick="switchDetailView('grid')"><span data-icon="users"></span> Everyone</button>
         </div>
       </div>
 
@@ -942,9 +1042,9 @@
           <div style="margin-top:1rem">
             <p class="section-title" style="margin-bottom:0.5rem">What gets posted automatically</p>
             <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)">
-              <div>📅 <strong style="color:var(--text)">New event</strong> — when an admin creates a new weekly event</div>
-              <div>📋 <strong style="color:var(--text)">Daily summary</strong> — who's available today, posted at the configured time</div>
-              <div>🎉 <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
+              <div><span data-icon="calendar"></span> <strong style="color:var(--text)">New event</strong> — when an admin creates a new weekly event</div>
+              <div><span data-icon="list"></span> <strong style="color:var(--text)">Daily summary</strong> — who's available today, posted at the configured time</div>
+              <div><span data-icon="sparkles"></span> <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
             </div>
           </div>
           <div style="margin-top:1.5rem">
@@ -1008,11 +1108,11 @@
           <div style="margin-top:1rem">
             <p class="section-title" style="margin-bottom:0.5rem">What gets posted automatically</p>
             <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)">
-              <div>📅 <strong style="color:var(--text)">New event</strong> — when an admin creates a new weekly event</div>
-              <div>📋 <strong style="color:var(--text)">Daily summary</strong> — who's available today, posted at the configured time</div>
-              <div>🔄 <strong style="color:var(--text)">Late changes</strong> — who changed today's answer after that summary went out</div>
-              <div>🎉 <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
-              <div>👋 <strong style="color:var(--text)">Nudge</strong> — DMs each user with an incomplete week, 24h after event creation</div>
+              <div><span data-icon="calendar"></span> <strong style="color:var(--text)">New event</strong> — when an admin creates a new weekly event</div>
+              <div><span data-icon="list"></span> <strong style="color:var(--text)">Daily summary</strong> — who's available today, posted at the configured time</div>
+              <div><span data-icon="refresh"></span> <strong style="color:var(--text)">Late changes</strong> — who changed today's answer after that summary went out</div>
+              <div><span data-icon="sparkles"></span> <strong style="color:var(--text)">Everyone available</strong> — posted once when all active users mark a day as available</div>
+              <div><span data-icon="send"></span> <strong style="color:var(--text)">Nudge</strong> — DMs each user with an incomplete week, 24h after event creation</div>
             </div>
           </div>
 
@@ -1170,6 +1270,7 @@ function showPage(name) {
   const navEl = document.getElementById('nav-' + (name === 'event-detail' ? 'events' : name));
   if (navEl) navEl.classList.add('active');
   if (name === 'events') loadEvents();
+  if (name === 'schedule') loadSchedule();
   if (name === 'admin') { loadUsers(); loadSsoSettings(); loadRecurringSettings(); loadDiscordSettings(); loadSignalSettings(); loadSignalTemplates(); }
 }
 
@@ -1199,7 +1300,7 @@ async function loadEvents() {
   try {
     const events = await api('/events/');
     if (!events.length) {
-      el.innerHTML = `<div class="empty-state"><div class="icon">📅</div><h3>No events yet</h3><p>${currentUser.role==='admin'?'Create your first weekly event above.':'Ask an admin to create an event.'}</p></div>`;
+      el.innerHTML = `<div class="empty-state"><div class="icon">${icon('calendar','ic-xl')}</div><h3>No events yet</h3><p>${currentUser.role==='admin'?'Create your first weekly event above.':'Ask an admin to create an event.'}</p></div>`;
       return;
     }
 
@@ -1220,7 +1321,7 @@ async function loadEvents() {
 
       const toggle = document.createElement('button');
       toggle.className = 'prev-events-toggle';
-      toggle.innerHTML = `<span class="chevron">▶</span> Previous events <span style="color:var(--text3);font-size:13px">(${previous.length})</span>`;
+      toggle.innerHTML = `<span class="chevron">${icon('chevron')}</span> Previous events <span style="color:var(--text3);font-size:13px">(${previous.length})</span>`;
 
       const grid = document.createElement('div');
       grid.className = 'prev-events-grid';
@@ -1262,16 +1363,16 @@ async function loadEventDetail(eventId, isPast = false) {
       adminBtns.innerHTML = `
         <div class="action-menu" id="notify-menu">
           <button class="action-menu-btn" onclick="toggleActionMenu(event, 'notify-dropdown')">
-            🔔 Notify <span style="font-size:10px">▾</span>
+            <span data-icon="bell"></span> Notify <span data-icon="chevronDown" style="font-size:9px"></span>
           </button>
           <div class="action-menu-dropdown" id="notify-dropdown">
-            <button class="action-menu-item" onclick="sendDiscordAnnouncement(${ev.id});closeActionMenus()">Discord 📣 Announce</button>
-            <button class="action-menu-item" onclick="sendDiscordSummary(${ev.id});closeActionMenus()">Discord 📋 Today's summary</button>
+            <button class="action-menu-item" onclick="sendDiscordAnnouncement(${ev.id});closeActionMenus()">Discord ${icon('megaphone')} Announce</button>
+            <button class="action-menu-item" onclick="sendDiscordSummary(${ev.id});closeActionMenus()">Discord ${icon('list')} Today's summary</button>
             <hr class="action-menu-divider">
-            <button class="action-menu-item" onclick="sendSignalAnnouncement(${ev.id});closeActionMenus()">Signal 📣 Announce</button>
-            <button class="action-menu-item" onclick="sendSignalSummary(${ev.id});closeActionMenus()">Signal 📋 Today's summary</button>
+            <button class="action-menu-item" onclick="sendSignalAnnouncement(${ev.id});closeActionMenus()">Signal ${icon('megaphone')} Announce</button>
+            <button class="action-menu-item" onclick="sendSignalSummary(${ev.id});closeActionMenus()">Signal ${icon('list')} Today's summary</button>
             <hr class="action-menu-divider">
-            <button class="action-menu-item" onclick="sendSignalNudge(${ev.id});closeActionMenus()">Signal 👋 Nudge stragglers</button>
+            <button class="action-menu-item" onclick="sendSignalNudge(${ev.id});closeActionMenus()">Signal ${icon('send')} Nudge stragglers</button>
           </div>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="openEditEvent(${ev.id})">Edit</button>
@@ -1478,12 +1579,12 @@ function renderAvailForm(data, isPast = false) {
             ? fmtRangeShort(start, end)
             : '<span class="af-time-plus">+</span> Time'}</button>
         <div class="af-choices">
-          ${mk('available','✓','Available')}
-          ${mk('maybe','~','Maybe')}
-          ${mk('unavailable','✗','Unavailable')}
+          ${mk('available', icon('check'), 'Available')}
+          ${mk('maybe', icon('help'), 'Maybe')}
+          ${mk('unavailable', icon('x'), 'Unavailable')}
         </div>
         <button class="af-note-btn ${note ? 'has-note' : ''}" title="${note ? esc(note) : 'Add a note'}"
-          onclick="formToggleNote('${iso}')">🗨</button>
+          onclick="formToggleNote('${iso}')">${icon('message')}</button>
       </div>
       <div class="af-time-row" id="af-time-${iso}" style="display:${hasTime ? 'flex' : 'none'}">
         <input type="time" id="af-start-${iso}" value="${esc(start)}" aria-label="Free from"
@@ -1513,6 +1614,7 @@ function renderAvailForm(data, isPast = false) {
       <div class="af-quick">
         <button class="btn btn-ghost btn-sm" onclick="formCopyLastWeek(${ev.id})">Copy last week</button>
         <button class="btn btn-ghost btn-sm" onclick="formAllFree()">All free</button>
+        <button class="btn btn-ghost btn-sm" onclick="formApplySchedule(${ev.id}, this)">Apply my schedule</button>
       </div>
       ${rows}
       <div class="af-footer">Saves as you tap</div>
@@ -1540,7 +1642,11 @@ async function formSetStatus(iso, status) {
 
   if (!clearing) {
     const idx = { available: 0, maybe: 1, unavailable: 2 }[status];
-    if (btns[idx]) btns[idx].className = `af-choice sel-${status}`;
+    if (btns[idx]) {
+      btns[idx].className = `af-choice sel-${status}`;
+      // Mark the answer just given: the tick draws itself on, the other two pop.
+      animateIcon(btns[idx].querySelector('.ic'), status === 'available' ? 'ic-draw' : 'ic-pop');
+    }
   }
   formUpdateProgress();
 
@@ -1801,14 +1907,20 @@ function renderWeekGrid(data, isPast = false) {
 
   const today = new Date().toISOString().slice(0,10);
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const statusEmoji = { available: '✓', unavailable: '✗', maybe: '~', '': '—' };
+  const statusGlyph = { available: '✓', unavailable: '✗', maybe: '~', '': '—' };
+  const statusIcon = { available: icon('check'), unavailable: icon('x'),
+                       maybe: icon('help'), '': icon('minus') };
   const statusTitle = { available: 'Available', unavailable: 'Unavailable', maybe: 'Maybe', '': 'No response' };
   // Icons only on narrow screens; full words when there's room
   const compact = isCompactView();
   const iconCls = compact ? ' icon-only' : '';
+  // Options take text only; pills can take an icon.
+  const optionLabel = s2 => compact
+    ? (statusGlyph[s2] || '—')
+    : `${statusGlyph[s2] || '—'} ${statusTitle[s2] || 'No response'}`;
   const cellLabel = s2 => compact
-    ? (statusEmoji[s2] || '—')
-    : `${statusEmoji[s2] || '—'} ${statusTitle[s2] || 'No response'}`;
+    ? (statusIcon[s2] || statusIcon[''])
+    : `${statusIcon[s2] || statusIcon['']} ${statusTitle[s2] || 'No response'}`;
 
   // One person's answer for one day. Your own cell is a dropdown (unless the
   // event is past); everyone else's is a read-only pill. Shared by both layouts.
@@ -1822,10 +1934,10 @@ function renderWeekGrid(data, isPast = false) {
       return `<div class="avail-cell-inner" style="align-items:center">
         <select class="avail-select-compact ${pillClass}${iconCls}" title="${statusTitle[status]||'No response'}"
           onchange="setAvailability(this, ${currentEventId}, '${iso}')">
-          <option value=""            ${status===''?'selected':''}>${cellLabel('')}</option>
-          <option value="available"   ${status==='available'?'selected':''}>${cellLabel('available')}</option>
-          <option value="unavailable" ${status==='unavailable'?'selected':''}>${cellLabel('unavailable')}</option>
-          <option value="maybe"       ${status==='maybe'?'selected':''}>${cellLabel('maybe')}</option>
+          <option value=""            ${status===''?'selected':''}>${optionLabel('')}</option>
+          <option value="available"   ${status==='available'?'selected':''}>${optionLabel('available')}</option>
+          <option value="unavailable" ${status==='unavailable'?'selected':''}>${optionLabel('unavailable')}</option>
+          <option value="maybe"       ${status==='maybe'?'selected':''}>${optionLabel('maybe')}</option>
         </select>${noteDot}</div>`;
     }
     const tip = (statusTitle[status]||'No response') + (note && user.id !== currentUser.id ? ' — ' + esc(note) : '');
@@ -1848,7 +1960,7 @@ function renderWeekGrid(data, isPast = false) {
         <div class="uname">${esc(user.username)}</div>
       </div>`;
     }
-    html += `<div class="wv-cell wv-head wv-last wv-sum-head" title="Available">✓</div>`;
+    html += `<div class="wv-cell wv-head wv-last wv-sum-head" title="Available">${icon('check')}</div>`;
     for (const d of days) {
       const iso = d.toISOString().slice(0,10);
       const isWknd = d.getDay()===0||d.getDay()===6;
@@ -1907,7 +2019,7 @@ function renderWeekGrid(data, isPast = false) {
   let notesHtml = '';
   if (allNotes.length) {
     notesHtml = `<div class="mobile-notes-section" id="mobile-notes-section">
-      <p class="section-title" style="margin-bottom:0.75rem">📝 Notes (${allNotes.length})</p>
+      <p class="section-title" style="margin-bottom:0.75rem">${icon('message')} Notes (${allNotes.length})</p>
       <div class="table-wrap">
         <table class="notes-table">
           <thead><tr><th>Who</th><th>Day</th><th>Note</th></tr></thead>
@@ -1998,7 +2110,7 @@ function buildTimesPanel(users, availability, dayIsos, dayNames) {
   }).join('');
 
   const head = `<div class="times-head">
-      <p class="section-title" style="margin-bottom:0">🕐 Times — ${fmtDateShort(timesDay)}</p>
+      <p class="section-title" style="margin-bottom:0">${icon('clock')} Times — ${fmtDateShort(timesDay)}</p>
       <div class="times-days">${chips}</div>
     </div>`;
 
@@ -2275,11 +2387,11 @@ function renderSso(d) {
     : '<span class="badge" style="background:var(--surface3);color:var(--text2)">Off</span>';
   let status;
   if (!d.enabled) status = '';
-  else if (d.access_email && d.matched_user) status = `✅ Working: Cloudflare says you're <strong style="color:var(--text)">${esc(d.access_email)}</strong>, which is the account <strong style="color:var(--text)">${esc(d.matched_user)}</strong>.`;
-  else if (d.access_email) status = `⚠️ Cloudflare says you're <strong style="color:var(--text)">${esc(d.access_email)}</strong>, but no active user here has that email.`;
-  else if (d.header_seen) status = `<span style="color:var(--red)">❌ Cloudflare sent a sign-in token but it didn't verify. Check that the team domain and AUD tag belong to this application.</span>`;
-  else status = "ℹ️ This visit didn't come through Cloudflare Access (normal on the LAN address).";
-  if (d.env_locked) status += `${status ? '<br>' : ''}🔒 Set by the <code>CF_ACCESS_TEAM_DOMAIN</code> / <code>CF_ACCESS_AUD</code> environment variables. Remove them from the container to manage this here.`;
+  else if (d.access_email && d.matched_user) status = `${icon('check')} Working: Cloudflare says you're <strong style="color:var(--text)">${esc(d.access_email)}</strong>, which is the account <strong style="color:var(--text)">${esc(d.matched_user)}</strong>.`;
+  else if (d.access_email) status = `${icon('warning')} Cloudflare says you're <strong style="color:var(--text)">${esc(d.access_email)}</strong>, but no active user here has that email.`;
+  else if (d.header_seen) status = `<span style="color:var(--red)">${icon('x')} Cloudflare sent a sign-in token but it didn't verify. Check that the team domain and AUD tag belong to this application.</span>`;
+  else status = icon('info') + " This visit didn't come through Cloudflare Access (normal on the LAN address).";
+  if (d.env_locked) status += `${status ? '<br>' : ''}${icon('lock')} Set by the <code>CF_ACCESS_TEAM_DOMAIN</code> / <code>CF_ACCESS_AUD</code> environment variables. Remove them from the container to manage this here.`;
   document.getElementById('sso-status').innerHTML = status;
 }
 
@@ -2360,13 +2472,13 @@ async function loadDiscordLog() {
   try {
     const rows = await api('/discord/log');
     if (!rows.length) { el.textContent = 'No messages sent yet.'; return; }
-    const typeLabels = { event_created: '📅 Announcement', daily_summary: '📋 Daily summary', all_available: '🎉 All available' };
+    const typeLabels = { event_created: icon('calendar') + ' Announcement', daily_summary: icon('list') + ' Daily summary', all_available: icon('sparkles') + ' All available' };
     el.innerHTML = rows.slice(0, 10).map(r => `
       <div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-        <span style="color:${r.success?'var(--green)':'var(--red)'}">●</span>
+        <span style="color:${r.success?'var(--green)':'var(--red)'}">${icon('dot')}</span>
         <span style="flex:1">${typeLabels[r.message_type] || r.message_type}${r.event_title ? ' · ' + esc(r.event_title) : ''}${r.date ? ' · ' + r.date : ''}</span>
         <span style="color:var(--text3);font-size:11px">${new Date(r.sent_at).toLocaleString()}</span>
-        ${r.error ? `<span style="color:var(--red);font-size:11px" title="${esc(r.error)}">⚠ error</span>` : ''}
+        ${r.error ? `<span style="color:var(--red);font-size:11px" title="${esc(r.error)}">${icon('warning')} error</span>` : ''}
       </div>`).join('');
   } catch(e) {
     el.textContent = 'Could not load log.';
@@ -2460,13 +2572,13 @@ async function loadSignalLog() {
   try {
     const rows = await api('/signal/log');
     if (!rows.length) { el.textContent = 'No messages sent yet.'; return; }
-    const typeLabels = { event_created: '📅 Announcement', daily_summary: '📋 Daily summary', all_available: '🎉 All available' };
+    const typeLabels = { event_created: icon('calendar') + ' Announcement', daily_summary: icon('list') + ' Daily summary', all_available: icon('sparkles') + ' All available' };
     el.innerHTML = rows.slice(0, 10).map(r => `
       <div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-        <span style="color:${r.success?'var(--green)':'var(--red)'}">●</span>
+        <span style="color:${r.success?'var(--green)':'var(--red)'}">${icon('dot')}</span>
         <span style="flex:1">${typeLabels[r.message_type] || r.message_type}${r.event_title ? ' · ' + esc(r.event_title) : ''}${r.date ? ' · ' + r.date : ''}</span>
         <span style="color:var(--text3);font-size:11px">${new Date(r.sent_at).toLocaleString()}</span>
-        ${r.error ? `<span style="color:var(--red);font-size:11px" title="${esc(r.error)}">⚠ error</span>` : ''}
+        ${r.error ? `<span style="color:var(--red);font-size:11px" title="${esc(r.error)}">${icon('warning')} error</span>` : ''}
       </div>`).join('');
   } catch(e) {
     el.textContent = 'Could not load log.';
@@ -2475,11 +2587,11 @@ async function loadSignalLog() {
 
 // ─── SIGNAL MESSAGE TEMPLATES ──────────────────────────────────────
 const TEMPLATE_LABELS = {
-  signal_template_event_created: { icon: '📅', title: 'New event announcement' },
-  signal_template_daily_summary:  { icon: '📋', title: 'Daily summary' },
-  signal_template_all_available:  { icon: '🎉', title: 'Everyone available' },
-  signal_template_nudge:          { icon: '👋', title: 'Nudge (DM to individual user)' },
-  signal_template_changes:        { icon: '🔄', title: 'Late changes' },
+  signal_template_event_created: { icon: 'calendar', title: 'New event announcement' },
+  signal_template_daily_summary:  { icon: 'list', title: 'Daily summary' },
+  signal_template_all_available:  { icon: 'sparkles', title: 'Everyone available' },
+  signal_template_nudge:          { icon: 'send', title: 'Nudge (DM to individual user)' },
+  signal_template_changes:        { icon: 'refresh', title: 'Late changes' },
 };
 
 async function loadSignalTemplates() {
@@ -2488,11 +2600,11 @@ async function loadSignalTemplates() {
   try {
     const data = await api('/signal/templates');
     el.innerHTML = Object.entries(data).map(([key, tpl]) => {
-      const meta = TEMPLATE_LABELS[key] || { icon: '✉️', title: key };
+      const meta = TEMPLATE_LABELS[key] || { icon: 'mail', title: key };
       return `
       <div class="template-card" id="tpl-card-${key}">
         <div class="template-card-header">
-          <div class="template-card-title">${meta.icon} ${meta.title}</div>
+          <div class="template-card-title">${icon(meta.icon)} ${meta.title}</div>
           ${tpl.is_custom ? `<span class="template-custom-badge">Customized</span>` : ''}
         </div>
         <textarea class="template-textarea" id="tpl-input-${key}" spellcheck="false">${esc(tpl.value)}</textarea>
@@ -2709,6 +2821,235 @@ async function deleteUser(id) {
 }
 
 // ─── MODAL & TOAST HELPERS ───────────────────────────────────────
+// ─── ICONS ───────────────────────────────────────────────────────
+// One outline set, drawn on a 24x24 grid in currentColor. Static markup asks
+// for an icon with data-icon="name" and is filled in once at boot; anything
+// built in JavaScript calls icon() inline. Both read this same table, so an
+// icon only ever has one definition.
+const ICONS = {
+  calendar:  '<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/>',
+  list:      '<path d="M8.5 6h11M8.5 12h11M8.5 18h11"/><circle cx="4.5" cy="6" r="1.1"/><circle cx="4.5" cy="12" r="1.1"/><circle cx="4.5" cy="18" r="1.1"/>',
+  sparkles:  '<path d="M11 3.5l1.7 4.3 4.3 1.7-4.3 1.7L11 15.5 9.3 11.2 5 9.5l4.3-1.7z"/><path d="M18 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+  send:      '<path d="M21.5 2.5L11 13"/><path d="M21.5 2.5l-6.6 19-3.9-8.5L2.5 9.1z"/>',
+  pencil:    '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M14.5 6.5l3 3"/>',
+  users:     '<circle cx="9.2" cy="8" r="3.3"/><path d="M3.3 19.6a6 6 0 0 1 11.8 0"/><path d="M16.4 5.2a3.3 3.3 0 0 1 0 5.7"/><path d="M17.8 14.1a6 6 0 0 1 2.9 5.5"/>',
+  refresh:   '<path d="M20.5 9.2A8.5 8.5 0 0 0 5.8 6.4L3 9.2"/><path d="M3 4.2v5h5"/><path d="M3.5 14.8a8.5 8.5 0 0 0 14.7 2.8l2.8-2.8"/><path d="M21 19.8v-5h-5"/>',
+  megaphone: '<path d="M3.5 10.5v3A1.5 1.5 0 0 0 5 15h2l7.5 4.5v-15L7 9H5a1.5 1.5 0 0 0-1.5 1.5z"/><path d="M18 9.3a4 4 0 0 1 0 5.4"/>',
+  bell:      '<path d="M18 9.2a6 6 0 1 0-12 0c0 4.8-2 6.3-2 6.3h16s-2-1.5-2-6.3z"/><path d="M10.2 19a2.1 2.1 0 0 0 3.6 0"/>',
+  message:   '<path d="M20 15.3a2.5 2.5 0 0 1-2.5 2.5H8.4L4 21.4V6.4A2.5 2.5 0 0 1 6.5 3.9h11A2.5 2.5 0 0 1 20 6.4z"/>',
+  clock:     '<circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.2 2"/>',
+  check:     '<path d="M5 12.6l4.6 4.6L19 6.8"/>',
+  x:         '<path d="M6.6 6.6l10.8 10.8"/><path d="M17.4 6.6L6.6 17.4"/>',
+  help:      '<circle cx="12" cy="12" r="8.6"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.3 3c-.6.3-.9.8-.9 1.4v.3"/><circle cx="12" cy="17.1" r="0.85" class="ic-solid"/>',
+  minus:     '<path d="M6.5 12h11"/>',
+  lock:      '<rect x="4.5" y="10.4" width="15" height="10.1" rx="2.4"/><path d="M8 10.4V7a4 4 0 0 1 8 0v3.4"/>',
+  warning:   '<path d="M12 4.3l9.2 15.4H2.8z"/><path d="M12 10v4.1"/><circle cx="12" cy="17.2" r="0.85" class="ic-solid"/>',
+  info:      '<circle cx="12" cy="12" r="8.6"/><path d="M12 11.2v5"/><circle cx="12" cy="7.8" r="0.85" class="ic-solid"/>',
+  mail:      '<rect x="3" y="5.4" width="18" height="13.2" rx="2.4"/><path d="M3.9 7.1l8.1 5.9 8.1-5.9"/>',
+  ban:       '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+  trash:     '<path d="M4 7h16"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.8 12a1.6 1.6 0 0 0 1.6 1.5h6.2A1.6 1.6 0 0 0 16.7 19l.8-12"/>',
+  plus:      '<path d="M12 5.2v13.6M5.2 12h13.6"/>',
+  chevron:   '<path d="M9.5 5.2l6.8 6.8-6.8 6.8"/>',
+  chevronDown:'<path d="M5.2 9.5L12 16.3l6.8-6.8"/>',
+  arrowLeft: '<path d="M19.5 12H4.8"/><path d="M11 5.3L4.3 12 11 18.7"/>',
+  dot:       '<circle cx="12" cy="12" r="4.6" class="ic-solid"/>',
+};
+
+function icon(name, extra = '') {
+  const body = ICONS[name];
+  if (!body) return '';
+  return `<svg class="ic ${extra}" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+}
+
+// Fill in the icons written straight into the page markup.
+function hydrateIcons(root = document) {
+  root.querySelectorAll('[data-icon]').forEach(el => {
+    if (el.firstElementChild) return;           // already done
+    el.innerHTML = icon(el.dataset.icon, el.dataset.iconClass || '');
+  });
+}
+
+// ─── MY SCHEDULE ─────────────────────────────────────────────────
+// Recurring blocked-out time. Private to each person: the group only ever
+// sees the availability it produces, never the labels.
+
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+let scheduleBlocks = [];
+let blockDays = [];          // which chips are lit in the open modal
+let editingBlockId = null;
+
+async function loadSchedule() {
+  const el = document.getElementById('schedule-list');
+  if (!el) return;
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    scheduleBlocks = await api('/schedule/');
+  } catch(e) {
+    el.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+    return;
+  }
+  if (!scheduleBlocks.length) {
+    el.innerHTML = `<div class="sched-empty">
+      <strong>Nothing blocked out yet</strong>
+      Add the times you're regularly busy — work, classes, the gym, sleep —
+      and you can drop them onto any week in one tap.
+    </div>`;
+    return;
+  }
+  el.innerHTML = scheduleBlocks.map(b => `
+    <div class="sched-card">
+      <div class="sched-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="width:21px;height:21px"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></div>
+      <div class="sched-body">
+        <div class="sched-label">${esc(b.label)}</div>
+        <div class="sched-sub">${esc(b.summary)}</div>
+      </div>
+      <div class="sched-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openScheduleBlock(${b.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="width:14px;height:14px"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/><line x1="14.5" y1="6.5" x2="17.5" y2="9.5"/></svg> Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteScheduleBlock(${b.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="width:14px;height:14px"><path d="M4 7h16"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.8 12a1.6 1.6 0 0 0 1.6 1.5h6.2A1.6 1.6 0 0 0 16.7 19l.8-12"/></svg> Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function openScheduleBlock(id = null) {
+  const existing = id === null ? null : scheduleBlocks.find(b => b.id === id);
+  editingBlockId = existing ? existing.id : null;
+  blockDays = existing ? [...existing.days] : [0, 1, 2, 3, 4];
+
+  showModal(`
+    <h3>${existing ? 'Edit' : 'Add'} blocked-out time</h3>
+    <div id="modal-error"></div>
+    <div class="form-group">
+      <label>Label</label>
+      <input type="text" id="sb-label" maxlength="60" placeholder="Work"
+             value="${existing ? esc(existing.label) : ''}">
+      <div class="form-hint">Only you see this. Other members just see "Busy".</div>
+    </div>
+    <div class="form-group">
+      <label>Days</label>
+      <div class="day-chips" id="sb-days">
+        ${DAY_LABELS.map((d, i) => `<button type="button" class="day-chip" data-day="${i}"
+            onclick="toggleBlockDay(${i})">${d}</button>`).join('')}
+      </div>
+      <div class="day-quick">
+        <button type="button" onclick="setBlockDays([0,1,2,3,4])">Weekdays</button>
+        <button type="button" onclick="setBlockDays([5,6])">Weekends</button>
+        <button type="button" onclick="setBlockDays([0,1,2,3,4,5,6])">Every day</button>
+      </div>
+    </div>
+    <div class="time-pair">
+      <div class="form-group">
+        <label>Busy from</label>
+        <input type="time" id="sb-start" value="${existing ? esc(existing.start_time) : '09:00'}">
+      </div>
+      <div class="form-group">
+        <label>Until</label>
+        <input type="time" id="sb-end" value="${existing ? esc(existing.end_time) : '17:00'}">
+        <div class="form-hint">An end before the start means past midnight, e.g. a 22:00–06:00 shift.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="width:auto" onclick="saveScheduleBlock()">Save</button>
+    </div>
+  `);
+  paintBlockDays();
+  document.getElementById('sb-label').focus();
+}
+
+function paintBlockDays() {
+  document.querySelectorAll('#sb-days .day-chip').forEach(chip => {
+    chip.classList.toggle('on', blockDays.includes(Number(chip.dataset.day)));
+  });
+}
+
+function toggleBlockDay(day) {
+  blockDays = blockDays.includes(day) ? blockDays.filter(d => d !== day) : [...blockDays, day];
+  paintBlockDays();
+}
+
+function setBlockDays(days) {
+  blockDays = [...days];
+  paintBlockDays();
+}
+
+async function saveScheduleBlock() {
+  const errEl = document.getElementById('modal-error');
+  errEl.innerHTML = '';
+  const body = {
+    label: document.getElementById('sb-label').value,
+    days: [...blockDays].sort((a, b) => a - b),
+    start_time: document.getElementById('sb-start').value,
+    end_time: document.getElementById('sb-end').value,
+  };
+  if (!body.days.length) {
+    errEl.innerHTML = '<div class="error-msg">Pick at least one day</div>';
+    return;
+  }
+  try {
+    if (editingBlockId === null) await api('/schedule/', { method: 'POST', body: JSON.stringify(body) });
+    else await api(`/schedule/${editingBlockId}`, { method: 'PUT', body: JSON.stringify(body) });
+    closeModal();
+    toast(editingBlockId === null ? 'Blocked-out time added' : 'Saved');
+    loadSchedule();
+  } catch(e) {
+    errEl.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+  }
+}
+
+async function deleteScheduleBlock(id) {
+  const block = scheduleBlocks.find(b => b.id === id);
+  if (!confirm(`Remove "${block ? block.label : 'this block'}"?`)) return;
+  try {
+    await api(`/schedule/${id}`, { method: 'DELETE' });
+    toast('Removed');
+    loadSchedule();
+  } catch(e) {
+    toast('Failed: ' + e.message);
+  }
+}
+
+// Restart a CSS animation on an icon that is already on the page.
+function animateIcon(el, cls) {
+  if (!el) return;
+  el.classList.remove(cls);
+  void el.offsetWidth;          // force a reflow so the animation replays
+  el.classList.add(cls);
+}
+
+// Swap a button's label for a spinning icon while its request is in flight,
+// so a slow save reads as busy rather than broken.
+async function withBusyIcon(btn, work) {
+  if (!btn) return work();
+  const was = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `${icon('refresh', 'ic-spin')} Working…`;
+  try {
+    return await work();
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = was;
+  }
+}
+
+// Fill the week from the person's schedule. It is a starting point, not a
+// lock: every day stays editable afterwards.
+async function formApplySchedule(eventId, btn) {
+  return withBusyIcon(btn, async () => {
+    try {
+      const data = await api(`/schedule/apply/${eventId}`, { method: 'POST' });
+      toast(data.message);
+      loadEventDetail(eventId);
+    } catch(e) {
+      if (/no blocked-out time/i.test(e.message)) {
+        toast('Nothing in your schedule yet — add some in My Schedule');
+        showPage('schedule');
+        return;
+      }
+      toast('Failed: ' + e.message);
+    }
+  });
+}
+
 // ─── OS NOTIFICATIONS ────────────────────────────────────────────
 // Opting in is per device, because a push subscription belongs to one
 // browser. The service worker in sw.js shows whatever arrives.
@@ -2842,7 +3183,7 @@ async function renderNotificationSetting() {
         : 'Each device is separate, so turn this on wherever you want to be told. Install Gamendar to your home screen for the best results.'}
       ${cfg.devices ? `<br>On <strong>${cfg.devices}</strong> device${cfg.devices === 1 ? '' : 's'} for your account.` : ''}
     </div>
-    ${on ? `<div style="margin-top:0.75rem"><button class="btn btn-ghost btn-sm" onclick="sendTestNotification(this)">Send a test</button></div>` : ''}
+    ${on ? `<div style="margin-top:0.75rem"><button class="btn btn-ghost btn-sm" onclick="sendTestNotification(this)">${icon('bell')} Send a test</button></div>` : ''}
   `;
 }
 
@@ -2862,15 +3203,20 @@ async function toggleNotifications(input) {
 }
 
 async function sendTestNotification(btn) {
-  btn.disabled = true; btn.textContent = 'Sending…';
+  const was = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `${icon('refresh', 'ic-spin')} Sending…`;
   try {
     await api('/push/test', { method: 'POST' });
     toast('Test notification sent');
+    btn.innerHTML = `${icon('bell', 'ic-swing')} Sent`;
+    setTimeout(() => { btn.innerHTML = was; btn.disabled = false; }, 1500);
+    return;
   } catch(e) {
     toast('Failed: ' + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Send a test';
   }
+  btn.innerHTML = was;
+  btn.disabled = false;
 }
 
 function showModal(html) {
@@ -2927,6 +3273,7 @@ function fmtDateShort(iso) {
 }
 
 // ─── BOOT ────────────────────────────────────────────────────────
+hydrateIcons();
 registerServiceWorker();
 (async () => {
   if (token || await trySso()) enterApp();
