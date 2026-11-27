@@ -1818,7 +1818,7 @@ function renderAvailForm(data, isPast = false) {
   for (let i = 0; i < 7; i++) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
-    formDays.push(d.toISOString().slice(0,10));
+    formDays.push(isoDay(d));
   }
 
   if (formIndexEvent !== ev.id) { formIndex = formFirstUnanswered(); formIndexEvent = ev.id; }
@@ -1835,7 +1835,7 @@ function formAnswered(iso) {
 // Open on today when it's still ahead of you, otherwise the first day you
 // haven't answered — the card you most likely came to fill in.
 function formFirstUnanswered() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = isoDay();
   const t = formDays.indexOf(today);
   if (t >= 0 && !formAnswered(today)) return t;
   const unset = formDays.findIndex(iso => !formAnswered(iso));
@@ -1862,7 +1862,7 @@ function formHeadHtml(ev, title, sub) {
 
 // ── Wide screens: every day at once ──────────────────────────────
 function formListHtml(ev) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = isoDay();
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   const rows = formDays.map(iso => {
@@ -1937,7 +1937,7 @@ function formCardsHtml(ev) {
 }
 
 function formChipsHtml() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = isoDay();
   const letters = ['S','M','T','W','T','F','S'];
   return formDays.map((iso, i) => {
     const d = new Date(iso + 'T00:00:00');
@@ -2320,14 +2320,14 @@ function renderWeekGrid(data, isPast = false) {
   const allNotes = [];
   for (const user of users) {
     for (const d of days) {
-      const iso = d.toISOString().slice(0,10);
+      const iso = isoDay(d);
       const note = ((avMap[user.id] || {})[iso + '_note']) || '';
       const status = ((avMap[user.id] || {})[iso]) || '';
       if (note) allNotes.push({ username: user.username, date: iso, note, status });
     }
   }
 
-  const today = new Date().toISOString().slice(0,10);
+  const today = isoDay();
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const statusGlyph = { available: '✓', unavailable: '✗', maybe: '~', '': '—' };
   const statusIcon = { available: icon('check'), unavailable: icon('x'),
@@ -2384,7 +2384,7 @@ function renderWeekGrid(data, isPast = false) {
     }
     html += `<div class="wv-cell wv-head wv-last wv-sum-head" title="Available">${icon('check')}</div>`;
     for (const d of days) {
-      const iso = d.toISOString().slice(0,10);
+      const iso = isoDay(d);
       const isWknd = d.getDay()===0||d.getDay()===6;
       html += `<div class="wv-cell day-header wv-day${iso===today?' today':''}${isWknd?' weekend':''}" data-iso="${iso}">
         <div class="day-name">${dayNames[d.getDay()]}</div>
@@ -2402,7 +2402,7 @@ function renderWeekGrid(data, isPast = false) {
     // Header row
     html += `<div class="week-grid-cell corner-cell day-header"></div>`;
     for (const d of days) {
-      const iso = d.toISOString().slice(0,10);
+      const iso = isoDay(d);
       const isWknd = d.getDay()===0||d.getDay()===6;
       html += `<div class="week-grid-cell day-header${iso===today?' today':''}${isWknd?' weekend':''}" data-iso="${iso}">
         <div class="day-name">${dayNames[d.getDay()]}</div>
@@ -2417,7 +2417,7 @@ function renderWeekGrid(data, isPast = false) {
         <div class="uname">${esc(user.username)}</div>
       </div>`;
       for (const d of days) {
-        const iso = d.toISOString().slice(0,10);
+        const iso = isoDay(d);
         const mine = user.id === currentUser.id;
         html += `<div class="week-grid-cell avail-cell"${mine ? ` data-user="${user.id}" data-date="${iso}"` : ''}>${cellInner(user, iso)}</div>`;
       }
@@ -2428,7 +2428,7 @@ function renderWeekGrid(data, isPast = false) {
     html += `<div class="summary-row">
       <div class="summary-cell summary-label">Available</div>`;
     for (const d of days) {
-      const iso = d.toISOString().slice(0,10);
+      const iso = isoDay(d);
       html += `<div class="summary-cell">
         <div class="count">${availableCount(iso)}</div>
         <div class="label-s">of ${users.length}</div>
@@ -2460,7 +2460,7 @@ function renderWeekGrid(data, isPast = false) {
   }
 
   // Default the overlay to today when today is in this week, else day one
-  const dayIsos = days.map(d => d.toISOString().slice(0,10));
+  const dayIsos = days.map(d => isoDay(d));
   lastDayIsos = dayIsos;
   if (!timesDay || !dayIsos.includes(timesDay)) {
     timesDay = dayIsos.includes(today) ? today : dayIsos[0];
@@ -2731,8 +2731,8 @@ function openCreateEvent() {
   const day = now.getDay();
   const mon = new Date(now); mon.setDate(now.getDate() - (day===0?6:day-1));
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-  document.getElementById('m-start').value = mon.toISOString().slice(0,10);
-  document.getElementById('m-end').value = sun.toISOString().slice(0,10);
+  document.getElementById('m-start').value = isoDay(mon);
+  document.getElementById('m-end').value = isoDay(sun);
 }
 
 async function submitCreateEvent() {
@@ -2969,7 +2969,7 @@ async function sendDiscordAnnouncement(eventId) {
 }
 
 async function sendDiscordSummary(eventId) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = isoDay();
   try {
     const data = await api(`/discord/send/summary/${eventId}`, {
       method: 'POST',
@@ -3161,7 +3161,7 @@ async function sendSignalAnnouncement(eventId) {
 }
 
 async function sendSignalSummary(eventId) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = isoDay();
   try {
     const data = await api(`/signal/send/summary/${eventId}`, {
       method: 'POST',
@@ -3754,6 +3754,16 @@ function fmtDateShort(iso) {
     const d = new Date(iso + 'T00:00:00');
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   } catch(e) { return iso; }
+}
+
+// A date's own calendar day, as the person reading it would name it.
+// toISOString() answers in UTC, which is a different day for most of the
+// world for part of every day: west of Greenwich "today" runs ahead into
+// tomorrow after the evening, and east of it a Date built from local
+// midnight serialises as the day before, which silently shifted every key
+// in the week.
+function isoDay(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 // "Saturday, November 28" — the heading on a day card
